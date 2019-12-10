@@ -1,0 +1,29 @@
+package scparse.ng
+
+import scutil.lang._
+
+package object text {
+	type TextParser[T]	= Parser[Char,T]
+
+	//------------------------------------------------------------------------------
+
+	implicit class TextParserNestOps(peer:TextParser[String]) {
+		def nestString[T](inner:Parser[Char,T]):TextParser[T]	=
+				peer nest (TextInput.of, inner)
+	}
+
+	implicit class TextParserParseOps[T](peer:Parser[Char,T]) {
+		def parseString(s:String):ParseResult[Char,T]	=
+				peer parse (TextInput of s)
+	}
+
+	implicit class TextParserStringifySeqOps[T](peer:Parser[T,Seq[Char]]) {
+		def stringify:Parser[T,String]	=
+				peer map { _.mkString }
+	}
+
+	implicit class TextParserStringifyNesOps[T](peer:Parser[T,Nes[Char]]) {
+		def stringify:Parser[T,String]	=
+				peer map { _.toSeq.mkString }
+	}
+}
