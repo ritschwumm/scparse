@@ -1,23 +1,21 @@
+import sbtcrossproject.{ CrossProject, CrossType, Platform }
+
 inThisBuild(Seq(
 	organization	:= "de.djini",
-	version			:= "0.167.0",
+	version			:= "0.168.0",
 
 	scalaVersion	:= "2.13.1",
 	scalacOptions	++= Seq(
 		"-deprecation",
 		"-unchecked",
-		// "-language:implicitConversions",
-		// "-language:existentials",
-		"-language:higherKinds",
-		// "-language:reflectiveCalls",
-		// "-language:dynamics",
-		// "-language:experimental.macros"
 		"-feature",
-		"-Xfatal-warnings",
-		"-Xlint"
+		"-language:higherKinds",
+		"-Werror",
+		"-Xlint",
 	),
 
 	conflictManager		:= ConflictManager.strict withOrganization "^(?!(org\\.scala-lang|org\\.scala-js)(\\..*)?)$",
+	addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full),
 
 	wartremoverErrors ++= Seq(
 		Wart.AsInstanceOf,
@@ -46,16 +44,37 @@ inThisBuild(Seq(
 	),
 ))
 
+lazy val noTestSettings	=
+	Seq(
+		test		:= {},
+		testQuick	:= {}
+	)
+
+// (crossProject crossType CrossType.Pure in base)
+def myCrossProject(id:String, base:File, crossType:CrossType):CrossProject	=
+	CrossProject(
+		id		= id,
+		base	= base,
+	)(
+		JVMPlatform,
+		JSPlatform
+	)
+	.crossType(crossType)
+	.settings(
+		name := id
+	)
+	.configurePlatform(JVMPlatform)	(_ withId (id + "-jvm"))
+	.configurePlatform(JSPlatform)	(_ withId (id + "-js"))
+
 lazy val `scparse` =
 	(project in file("."))
 	.aggregate(
 		`scparse-oldschool`,
-		`scparse-ng`,
+		`scparse-ng-jvm`,
+		`scparse-ng-js`,
 	)
 	.settings(
 		publishArtifact := false
-		//publish		:= {},
-		//publishLocal	:= {}
 	)
 
 //------------------------------------------------------------------------------
@@ -72,13 +91,20 @@ lazy val `scparse-oldschool`	=
 	)
 
 lazy val `scparse-ng`	=
-	(project in file("modules/ng"))
+	myCrossProject("scparse-ng", file("modules/ng"), CrossType.Pure)
 	.enablePlugins()
-	.dependsOn()
+	// TODO this crashes the build with "no suck key exception" on JVMPlatform and/or JSPlatform - why?
+	//.dependsOn()
 	.settings(
 		libraryDependencies	++= Seq(
-			"de.djini"		%% "scutil-core"	% "0.167.0"	% "compile",
+			"de.djini"		%%% "scutil-base"	% "0.167.0"	% "compile",
 		),
 	)
+	.jvmSettings()
+	.jsSettings(
+		noTestSettings
+	)
+lazy val `scparse-ng-jvm`	= `scparse-ng`.jvm
+lazy val `scparse-ng-js`	= `scparse-ng`.js
 
 

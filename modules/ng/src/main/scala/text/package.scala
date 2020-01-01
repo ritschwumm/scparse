@@ -9,21 +9,21 @@ package object text {
 
 	implicit class TextParserNestOps(peer:TextParser[String]) {
 		def nestString[T](inner:Parser[Char,T]):TextParser[T]	=
-				peer nest (TextInput.of, inner)
+			peer nest (TextInput.of, inner)
 	}
 
 	implicit class TextParserParseOps[T](peer:Parser[Char,T]) {
-		def parseString(s:String):ParseResult[Char,T]	=
-				peer parse (TextInput of s)
+		def parseString(s:String):ParserResult[Char,T]	=
+			peer parse (TextInput of s)
 	}
 
 	implicit class TextParserStringifySeqOps[T](peer:Parser[T,Seq[Char]]) {
 		def stringify:Parser[T,String]	=
-				peer map { _.mkString }
+			peer map { _.mkString }
 	}
 
 	implicit class TextParserStringifyNesOps[T](peer:Parser[T,Nes[Char]]) {
 		def stringify:Parser[T,String]	=
-				peer map { _.toSeq.mkString }
+			peer map { _.toSeq.mkString }
 	}
 }

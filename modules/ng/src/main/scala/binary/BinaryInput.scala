@@ -10,7 +10,7 @@ object BinaryInput {
 
 final case class BinaryInput(s:ByteString, index:Int) extends ParserInput[Byte] {
 	def next:Option[(ParserInput[Byte],Byte)]	=
-			s get index map { byte =>
-				BinaryInput(s, index+1) -> byte
-			}
+		s get index map { byte =>
+			BinaryInput(s, index+1) -> byte
+		}
 }
