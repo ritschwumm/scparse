@@ -25,115 +25,115 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	//## factory
 
 	def Parser[C,T](func:ParseFunc[C,T]):Parser[C,T]	=
-			new Parser[C,T] {
-				def apply(s:Source[C]):Result[C,T]	= func(s)
-			}
+		new Parser[C,T] {
+			def apply(s:Source[C]):Result[C,T]	= func(s)
+		}
 
 	// Pointed, aka unit aka return aka pure
 	def success[C,T](t:T):Parser[C,T]	=
-			Parser { it => unitM((it, t)) }
+		Parser { it => unitM((it, t)) }
 
 	// MonadZero, aka zero
 	def failure[C]:Parser[C,Nothing]	=
-			Parser(_ => zeroM)
+		Parser(_ => zeroM)
 
 	// base case
 	def any[C]:Parser[C,C]	=
-			Parser(
-				_ cata (
-					zeroM,
-					(x,y) => unitM((x,y))
-				)
+		Parser(
+			_ cata (
+				zeroM,
+				(x,y) => unitM((x,y))
 			)
+		)
 
 	// MonadZero (Alternative?)
 	def filter[C,T](sub: =>Parser[C,T], func:T=>Boolean):Parser[C,T] =
-			// Parser(s => sub(s) filter { rt => func(rt._2) })
-			Parser { s =>
-				filterM(
-					sub(s),
-					(it:Item[C,T]) => func(it._2)
-				)
-			}
+		// Parser(s => sub(s) filter { rt => func(rt._2) })
+		Parser { s =>
+			filterM(
+				sub(s),
+				(it:Item[C,T]) => func(it._2)
+			)
+		}
 
 	// TODO add filterNot
 
 	def filterMap[C,T,U](sub: =>Parser[C,T], func:T=>Option[U]):Parser[C,U]	=
-			// Parser(s => sub(s) flatMap { rt => func(rt._2) map { (rt._1, _) } })
-			Parser { (s:Source[C]) =>
-				filterMapM(
-					sub(s),
-					(it:Item[C,T]) => func(it._2) map {(it._1, _)}
-				)
-			}
+		// Parser(s => sub(s) flatMap { rt => func(rt._2) map { (rt._1, _) } })
+		Parser { (s:Source[C]) =>
+			filterMapM(
+				sub(s),
+				(it:Item[C,T]) => func(it._2) map {(it._1, _)}
+			)
+		}
 
 	// NOTE this just takes the first item for PEG parsers
 	def multiMap[C,T,U](sub: =>Parser[C,T], func:T=>Iterable[U]):Parser[C,U]	=
-			//Parser(s => sub(s) flatMap { rt => func(rt._2) map { (rt._1, _) } })
-			Parser { (s:Source[C]) =>
-				multiMapM(
-					sub(s),
-					(it:Item[C,T]) => func(it._2) map {(it._1, _)}
-				)
-			}
+		//Parser(s => sub(s) flatMap { rt => func(rt._2) map { (rt._1, _) } })
+		Parser { (s:Source[C]) =>
+			multiMapM(
+				sub(s),
+				(it:Item[C,T]) => func(it._2) map {(it._1, _)}
+			)
+		}
 
 	// Functor, aka fmap
 	def map[C,T,U](sub: =>Parser[C,T], func:T=>U):Parser[C,U]	=
-			//Parser(s => sub(s) map { rt => (rt._1, func(rt._2)) })
-			Parser { (s:Source[C]) =>
-				mapM(
-					sub(s),
-					(it:Item[C,T]) => (it._1, func(it._2))
-				)
-			}
+		//Parser(s => sub(s) map { rt => (rt._1, func(rt._2)) })
+		Parser { (s:Source[C]) =>
+			mapM(
+				sub(s),
+				(it:Item[C,T]) => (it._1, func(it._2))
+			)
+		}
 
 	// Monad, aka bind aka >==
 	def flatMap[C,T,U](sub: =>Parser[C,T], func:T=>Parser[C,U]):Parser[C,U]	=
-			// Parser(s => sub(s) flatMap { rt => func(rt._2)(rt._1) })
-			Parser { (s:Source[C]) =>
-				flatMapM(
-					sub(s),
-					(it:Item[C,T]) => func(it._2)(it._1)
-				)
-			}
+		// Parser(s => sub(s) flatMap { rt => func(rt._2)(rt._1) })
+		Parser { (s:Source[C]) =>
+			flatMapM(
+				sub(s),
+				(it:Item[C,T]) => func(it._2)(it._1)
+			)
+		}
 
 	//  Applicative, aka <*> aka ap
 	def applicate[C,S,T](mapping: =>Parser[C,S=>T], value: =>Parser[C,S]):Parser[C,T] =
-			//Parser(s => mapping(s) flatMap { rf => value(rf._1) map { st => (st._1, rf._2(st._2)) } })
-			// TODO use applicM	if possible
-			Parser { (s:Source[C]) =>
-				flatMapM(
-					mapping(s),
-					(rf:Item[C,S=>T]) => {
-						mapM(
-							value(rf._1),
-							{ st:Item[C,S] => (st._1, rf._2(st._2)) }
-						)
-					}
-				)
-			}
+		//Parser(s => mapping(s) flatMap { rf => value(rf._1) map { st => (st._1, rf._2(st._2)) } })
+		// TODO use applicM	if possible
+		Parser { (s:Source[C]) =>
+			flatMapM(
+				mapping(s),
+				(rf:Item[C,S=>T]) => {
+					mapM(
+						value(rf._1),
+						{ st:Item[C,S] => (st._1, rf._2(st._2)) }
+					)
+				}
+			)
+		}
 
 	// MonadPlus (Alternative?)
 	def alternate[C,T,U>:T](first: =>Parser[C,T], second: =>Parser[C,U]):Parser[C,U]	=
-			Parser { s => alternateM(first(s), second(s)) }
+		Parser { s => alternateM(first(s), second(s)) }
 
 	/** prefer first parser over second */
 	def prefer[C,T,U>:T](first: =>Parser[C,T], second: =>Parser[C,U]):Parser[C,U]	=
-			Parser { s => preferM(first(s), second(s)) }
+		Parser { s => preferM(first(s), second(s)) }
 
 	/** swaps success and failure, never consumes any input */
 	def not[C,T](sub: =>Parser[C,T]):Parser[C,Unit] =
-			Parser { s =>
-				if (isEmptyM(sub(s)))	unitM((s, ()))
-				else					zeroM
-			}
+		Parser { s =>
+			if (isEmptyM(sub(s)))	unitM((s, ()))
+			else					zeroM
+		}
 
 	/** checks, but never consumes any input */
 	def guard[C,T](sub: =>Parser[C,T]):Parser[C,Unit] =
-			Parser { s =>
-				if (nonEmptyM(sub(s)))	unitM((s, ()))
-				else					zeroM
-			}
+		Parser { s =>
+			if (nonEmptyM(sub(s)))	unitM((s, ()))
+			else					zeroM
+		}
 
 	//------------------------------------------------------------------------------
 
@@ -142,70 +142,70 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 
 	/** expects a full parse, fails if anything is left in the source */
 	def phrase[C,T](sub: =>Parser[C,T]):Parser[C,T]	=
-			left(sub, eof)
+		left(sub, eof)
 
 	/** scalaesque filterMap using a PartialFunction */
 	def collect[C,T,U](sub: =>Parser[C,T], func:PartialFunction[T,U]):Parser[C,U]	=
-			filterMap(sub, func.lift)
+		filterMap(sub, func.lift)
 
 	/** returns a fixed value on success */
 	def tag[C,T,U](sub: =>Parser[C,T], value: =>U):Parser[C,U]	=
-			map(sub, (_:T) => value)
+		map(sub, (_:T) => value)
 
 	/** sequences two parsers producing a Pair */
 	def sequence[C,T,U](first: =>Parser[C,T], second: =>Parser[C,U]):Parser[C,(T,U)]	=
-			// for { p1 <- parser1; p2 <- parser2 } yield Pair(p1, p2)
-			// applicate(applicate(success((t:T) => (u:U) => Pair(t,u)), parser1), parser2)
-			flatMap(first, { value1:T =>
-				map(second, { value2:U =>
-					  (value1, value2)
-				})
+		// for { p1 <- parser1; p2 <- parser2 } yield Pair(p1, p2)
+		// applicate(applicate(success((t:T) => (u:U) => Pair(t,u)), parser1), parser2)
+		flatMap(first, { value1:T =>
+			map(second, { value2:U =>
+				  (value1, value2)
 			})
+		})
 
 	/** sequences a normal and a List parser producing a List */
 	def cons[C,T,U>:T](first: =>Parser[C,T], second: =>Parser[C,List[U]]):Parser[C,List[U]]	=
-			// for { p1 <- parser1; p2 <- parser2 } yield p1 :: p2
-			// applicate(applicate(success((t:T) => (uu:List[U]) => t :: uu), parser1), parser2)
-			flatMap(first, { value1:T =>
-				map(second, { value2:List[U] =>
-					value1 :: value2
-				})
+		// for { p1 <- parser1; p2 <- parser2 } yield p1 :: p2
+		// applicate(applicate(success((t:T) => (uu:List[U]) => t :: uu), parser1), parser2)
+		flatMap(first, { value1:T =>
+			map(second, { value2:List[U] =>
+				value1 :: value2
 			})
+		})
 
 	/** sequences two List parsers into a single List parser */
 	def conses[C,T,U>:T](first: =>Parser[C,List[T]], second: =>Parser[C,List[U]]):Parser[C,List[U]]	=
-			flatMap(first, { value1:List[T] =>
-				map(second, { value2:List[U] =>
-					value1 ::: value2
-				})
+		flatMap(first, { value1:List[T] =>
+			map(second, { value2:List[U] =>
+				value1 ::: value2
 			})
+		})
 
 	/** optional */
 	def option[C,T](sub: =>Parser[C,T]):Parser[C,Option[T]]	=
-			alternate(map(sub, Some.apply[T]), success(None))
+		alternate(map(sub, Some.apply[T]), success(None))
 
 	/** repeat at least 1 */
 	def repeat1[C,T](sub: =>Parser[C,T]):Parser[C,List[T]]	=
-			cons(sub, repeat(sub))
+		cons(sub, repeat(sub))
 
 	/** repeat zero or more */
 	def repeat[C,T](sub: =>Parser[C,T]):Parser[C,List[T]]	=
-			alternate(repeat1(sub), success(Nil))
+		alternate(repeat1(sub), success(Nil))
 
 	/** repeat n times */
 	def repeatN[C,T](sub: =>Parser[C,T], n:Int):Parser[C,List[T]] =
-			if (n == 0)	success(Nil)
-			else		cons(sub, repeatN(sub, n-1))
+		if (n == 0)	success(Nil)
+		else		cons(sub, repeatN(sub, n-1))
 
 	def repeatSeparated1[C,T,U](item: =>Parser[C,T], separator: =>Parser[C,U]):Parser[C,List[T]]	=
-			cons(item, repeat(right(separator, item)))
+		cons(item, repeat(right(separator, item)))
 
 	def repeatSeparated[C,T,U](item: =>Parser[C,T], separator: =>Parser[C,U]):Parser[C,List[T]]	=
-			alternate(repeatSeparated1(item, separator), success(Nil))
+		alternate(repeatSeparated1(item, separator), success(Nil))
 
 	/** sequences, but returns only the first */
 	def left[C,T,U](value: =>Parser[C,T], ignored: =>Parser[C,U]):Parser[C,T] =
-			map(sequence(value, ignored), (it:(T,U)) => it._1)
+		map(sequence(value, ignored), (it:(T,U)) => it._1)
 
 	/** sequences, but returns only the second */
 	def right[C,T,U](ignored: =>Parser[C,T], value: =>Parser[C,U]):Parser[C,U] =
@@ -255,18 +255,18 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	msum = foldr mplus mzero
 	*/
 	def alternateMultiple[C,T](subs: =>Seq[Parser[C,T]]):Parser[C,T]	=
-			subs.foldLeft(failure:Parser[C,T])(alternate(_,_))
+		subs.foldLeft(failure:Parser[C,T])(alternate(_,_))
 
 	// NOTE this is the same as alternateMultiple for PEG parsers
 	def preferMultiple[C,T](subs: =>Seq[Parser[C,T]]):Parser[C,T]	=
-			subs.foldLeft(failure:Parser[C,T])(prefer(_,_))
+		subs.foldLeft(failure:Parser[C,T])(prefer(_,_))
 
 	// looks like sequence
 	def consMultiple[C,T](subs: =>List[Parser[C,T]]):Parser[C,List[T]]	=
-			subs match {
-				case head :: tail	=> cons(head, consMultiple(tail))
-				case Nil			=> success(Nil)
-			}
+		subs match {
+			case head :: tail	=> cons(head, consMultiple(tail))
+			case Nil			=> success(Nil)
+		}
 
 	//------------------------------------------------------------------------------
 	//## extras
@@ -415,12 +415,12 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	//## debugging
 
 	def debug[C,T](sub: =>Parser[C,T], before:Effect[Source[C]], after:Effect[Result[C,T]]):Parser[C,T]	=
-			Parser { s =>
-				before(s)
-				val r = sub(s)
-				after(r)
-				r
-			}
+		Parser { s =>
+			before(s)
+			val r = sub(s)
+			after(r)
+			r
+		}
 
 	//------------------------------------------------------------------------------
 	//## parser itself
@@ -429,10 +429,10 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		//## entry
 
 		def parse(s:Source[C]):M[T]	=
-				mapM(
-					this.$ apply s,
-					(it:Item[C,T]) => it._2
-				)
+			mapM(
+				this.$ apply s,
+				(it:Item[C,T]) => it._2
+			)
 
 		//## scala
 

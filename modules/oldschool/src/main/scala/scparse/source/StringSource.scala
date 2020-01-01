@@ -8,9 +8,9 @@ object StringSource {
 
 final case class StringSource(input:String, position:Int) extends Source[Char] {
 	def cata[X](empty: =>X, full:(Source[Char],Char)=>X):X	=
-			if (position < input.length)	full(StringSource(input, position+1), input charAt position)
-			else							empty
+		if (position < input.length)	full(StringSource(input, position+1), input charAt position)
+		else							empty
 
 	override def toString:String	=
-			show"StringSource(position=${position}, size=${input.length})"
+		show"StringSource(position=${position}, size=${input.length})"
 }

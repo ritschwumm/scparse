@@ -6,8 +6,8 @@ object ListSource {
 
 final case class ListSource[C](delegate:List[C]) extends Source[C] {
 	def cata[X](empty: =>X, full:(Source[C],C)=>X):X	=
-			delegate match {
-				case head :: tail	=> full(ListSource(tail), head)
-				case Nil			=> empty
-			}
+		delegate match {
+			case head :: tail	=> full(ListSource(tail), head)
+			case Nil			=> empty
+		}
 }

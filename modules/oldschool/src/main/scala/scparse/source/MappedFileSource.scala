@@ -18,6 +18,6 @@ object MappedFileSource {
 
 final case class MappedFileSource(input:MappedByteBuffer, position:Int) extends Source[Byte] {
 	def cata[X](empty: =>X, full:(Source[Byte],Byte)=>X):X	=
-			if (position < input.remaining)	full(MappedFileSource(input, position+1), input get position)
-			else							empty
+		if (position < input.remaining)	full(MappedFileSource(input, position+1), input get position)
+		else							empty
 }

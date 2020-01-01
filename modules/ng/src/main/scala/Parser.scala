@@ -119,6 +119,7 @@ abstract class Parser[S,+T] { self =>
 			pred(it) option it
 		}
 
+	// aka filter
 	def ensure(pred:Predicate[T]):Parser[S,T]	=
 		self require (_ optionBy pred)
 
@@ -127,8 +128,10 @@ abstract class Parser[S,+T] { self =>
 
 	def required[U](implicit ev:T=>Option[U]):Parser[S,U]	= self require ev
 
+	// aka collect
 	def requirePartial[U](func:PartialFunction[T,U]):Parser[S,U]	= self require func.lift
 
+	// aka mapFilter
 	def require[U](func:T=>Option[U]):Parser[S,U]	=
 		input => {
 			self parse input match {
@@ -259,14 +262,45 @@ abstract class Parser[S,+T] { self =>
 			loop(input, Vector.empty[T])
 		}
 
-	def sepSeq(sepa:Parser[S,Any]):Parser[S,Seq[T]]	=
+	def sepVector(sepa:Parser[S,Any]):Parser[S,Vector[T]]	=
 		self sepNes sepa map { _.toVector } orElse (Parser success Vector.empty)
+
+	def sepSeq(sepa:Parser[S,Any]):Parser[S,Seq[T]]	=
+		sepVector(sepa)
 
 	def sepNes(sepa:Parser[S,Any]):Parser[S,Nes[T]]	=
 		self next (sepa right self).seq map { case (x, xs) => Nes(x, xs) }
 
 	//------------------------------------------------------------------------------
 
+	def chainLeft[U>:T](op:Parser[S,(U,U)=>U]):Parser[S,U]	=
+		for {
+			first	<-	this
+			apps	<-	(op next this).vector
+		}
+		yield {
+			(apps foldLeft (first:U)) { (cur, app) =>
+				val (op, nxt)	= app
+				op(cur, nxt)
+			}
+		}
+
+	// TODO does this do the same thing as the one in oldschool?
+	def chainRight[U>:T](op:Parser[S,(U,U)=>U]):Parser[S,U]	=
+		for {
+			apps	<-	(this next op).vector
+			last	<-	this
+		}
+		yield {
+			(apps foldRight (last:U)) { (app, cur) =>
+				val (prv, op)	= app
+				op(prv, cur)
+			}
+		}
+
+	//------------------------------------------------------------------------------
+
+	// TODO inside in oldschool does what nest does here!
 	def inside(quote:Parser[S,Any]):Parser[S,T]	=
 		quote right self left quote
 

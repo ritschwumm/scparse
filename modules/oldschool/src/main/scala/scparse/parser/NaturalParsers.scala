@@ -10,9 +10,9 @@ trait NaturalParsers[M[+_]] { self:Parsers[M] with StringParsers[M] =>
 	def digitZ:StringParser[Char]	= self accept '0'
 
 	def buildNumber(placeValue:BigInt, digitValue:Char=>BigInt, digitChars:Seq[Char]):BigInt	=
-			digitChars.foldLeft(BigInt(0)){
-				(out,v) => out * placeValue + digitValue(v)
-			}
+		digitChars.foldLeft(BigInt(0)){
+			(out,v) => out * placeValue + digitValue(v)
+		}
 
 	val decodeNumber:PartialFunction[Char,BigInt]	= {
 		case c if c >= '0' && c <= '9'	=> c - '0'
