@@ -8,6 +8,6 @@ object SimpleDemo {
 	}
 
 	object TestParsers extends Parsers[Option] {
-		def foo	= repeat('a') ~ repeat(any)
+		def foo	= repeat('a') next repeat(any)
 	}
 }

@@ -11,11 +11,11 @@ object CalculatorDemo {
 		def complete	= full(expression)
 
 		def expression:StringParser[BigInt]
-					= term		<< (add | sub)
-		def term	= factor	<< (mul | div)
-		def factor	= value		>> exp
-		def value	= number | bracket
-		def bracket	= symbol("(") ~> expression <~ symbol(")")
+					= term		chainLeft (add alternate sub)
+		def term	= factor	chainLeft (mul alternate div)
+		def factor	= value		chainRight exp
+		def value	= number alternate bracket
+		def bracket	= symbol("(") right expression left symbol(")")
 
 		def add		= binary[BigInt]("+")(_+_)
 		def sub		= binary[BigInt]("-")(_-_)
@@ -23,14 +23,14 @@ object CalculatorDemo {
 		def div		= binary[BigInt]("/")(_/_)
 		def exp		= binary[BigInt]("^")(_ pow _.toInt)
 
-		def number		= sign <*> token(natural)
-		def sign		= signPlus | signMinus | signNone
+		def number		= sign pa token(natural)
+		def sign		= signPlus alternate signMinus alternate signNone
 		def signPlus	= unary[BigInt]("+")(identity)
 		def signMinus	= unary[BigInt]("-")(-_)
 		def signNone	= nullary[BigInt](identity)
 
 		def nullary[X](func:X=>X):StringParser[X=>X]					= success(func)
-		def unary[X](sym:String)(func:X=>X):StringParser[X=>X]			= symbol(sym) ^^^ func
-		def binary[X](sym:String)(func:(X,X)=>X):StringParser[(X,X)=>X]	= symbol(sym) ^^^ func
+		def unary[X](sym:String)(func:X=>X):StringParser[X=>X]			= symbol(sym) tag func
+		def binary[X](sym:String)(func:(X,X)=>X):StringParser[(X,X)=>X]	= symbol(sym) tag func
 	}
 }

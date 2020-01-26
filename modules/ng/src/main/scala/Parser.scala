@@ -20,7 +20,7 @@ object Parser {
 	def index[S]:Parser[S,Int]	=
 		input => ParserResult.Success(input, input.index)
 
-	def option[S,T](it:Option[T]):Parser[S,T]	=
+	def fromOption[S,T](it:Option[T]):Parser[S,T]	=
 		it match {
 			case None		=> failure
 			case Some(t)	=> success(t)
@@ -53,20 +53,26 @@ object Parser {
 		}
 
 	// BETTER use Equal
-	def is[S](c:S):Parser[S,S]	=
-		any[S] ensure (_ == c) named "specific item"
+	@deprecated("use acceptSet", "0.170.0")
+	def isInSet[S](cs:Set[S]):Parser[S,S]	= acceptSet(cs)
+
+	@deprecated("use acceptInRange", "0.170.0")
+	def isInRange[S:Ordering](min:S, max:S):Parser[S,S]	= acceptRange(min, max)
+
+	def acceptSet[S](cs:Set[S]):Parser[S,S]	=
+		any[S] filter cs.contains named "item in set"
+
+	def acceptRange[S:Ordering](min:S, max:S):Parser[S,S]	=
+		any[S] filter (it => it >= min && it <= max) named "item in range"
 
 	// BETTER use Equal
-	def isInSet[S](cs:Set[S]):Parser[S,S]	=
-		any[S] ensure cs.contains named "item in set"
+	def is[S](c:S):Parser[S,Unit]	=
+		any[S].filter (_ == c).void named "specific item"
 
-	def isInRange[S:Ordering](min:S, max:S):Parser[S,S]	=
-		any[S] ensure (it => it >= min && it <= max) named "item in range"
-
-	def isSeq[S](cs:Seq[S]):Parser[S,Seq[S]]	=
+	def isSeq[S](cs:Seq[S]):Parser[S,Unit]	=
 		input => {
 			@tailrec
-			def loop(input2:ParserInput[S], look:Seq[S]):ParserResult[S,Seq[S]]	=
+			def loop(input2:ParserInput[S], look:Seq[S]):ParserResult[S,Unit]	=
 					look match {
 						case lookHead +: lookTail	=>
 							 input2.next match {
@@ -74,7 +80,7 @@ object Parser {
 								case _										=> LeafFailure(input2.index, "end of input")
 							}
 						case _	=>
-							Success(input2, cs)
+							Success(input2, ())
 					}
 			loop(input, cs)
 		}
@@ -119,20 +125,31 @@ abstract class Parser[S,+T] { self =>
 			pred(it) option it
 		}
 
-	// aka filter
-	def ensure(pred:Predicate[T]):Parser[S,T]	=
-		self require (_ optionBy pred)
+	@deprecated("use filter", "0.170.0")
+	def ensure(pred:Predicate[T]):Parser[S,T]	= filter(pred)
 
+	@deprecated("use collapse", "0.170.0")
+	def required[U](implicit ev:T=>Option[U]):Parser[S,U]	= collapse
+
+	@deprecated("use collapseNamed", "0.170.0")
 	def requiredFor[U](name:String)(implicit ev:T=>Option[U]):Parser[S,U]	=
-		self.required named name
+		self.collapse named name
 
-	def required[U](implicit ev:T=>Option[U]):Parser[S,U]	= self require ev
+	@deprecated("use collect", "0.170.0")
+	def requirePartial[U](func:PartialFunction[T,U]):Parser[S,U]	= collect(func)
 
-	// aka collect
-	def requirePartial[U](func:PartialFunction[T,U]):Parser[S,U]	= self require func.lift
+	@deprecated("use collapseMap", "0.170.0")
+	def require[U](func:T=>Option[U]):Parser[S,U]	= collapseMap(func)
+
+	def filter(pred:Predicate[T]):Parser[S,T]	=
+		self collapseMap (_ optionBy pred)
+
+	/** ensures we parsed some specific input value */
+	def parsed[TT>:T](value:TT):Parser[S,Unit]	=
+		self.filter(_ == value).void
 
 	// aka mapFilter
-	def require[U](func:T=>Option[U]):Parser[S,U]	=
+	def collapseMap[U](func:T=>Option[U]):Parser[S,U]	=
 		input => {
 			self parse input match {
 				case Success(tail, value)	=>
@@ -143,6 +160,13 @@ abstract class Parser[S,+T] { self =>
 				case Failure(index, errors)	=> Failure(index, errors)
 			}
 		}
+
+	def collapse[U](implicit ev:T=>Option[U]):Parser[S,U]	= self collapseMap ev
+
+	def collapseNamed[U](name:String)(implicit ev:T=>Option[U]):Parser[S,U]	=
+		self.collapse named name
+
+	def collect[U](func:PartialFunction[T,U]):Parser[S,U]	= self collapseMap func.lift
 
 	def named(error:String):Parser[S,T]	=
 		input => {
@@ -196,11 +220,17 @@ abstract class Parser[S,+T] { self =>
 	def ap[U,V](that:Parser[S,U])(implicit ev:T=>(U=>V)):Parser[S,V]	=
 		for { a	<- self; b	<- that } yield a(b)
 
-	def next[U](that:Parser[S,U]):Parser[S,(T,U)]	=
+	def zip[U](that:Parser[S,U]):Parser[S,(T,U)]	=
 		for { a	<- self; b	<- that } yield (a, b)
 
-	def nextWith[U,V](that:Parser[S,U])(combine:(T,U)=>V):Parser[S,V]	=
+	def zipWith[U,V](that:Parser[S,U])(combine:(T,U)=>V):Parser[S,V]	=
 		for { a	<- self; b	<- that } yield combine(a, b)
+
+	def next[U](that:Parser[S,U]):Parser[S,(T,U)]	=
+		this zip that
+
+	def nextWith[U,V](that:Parser[S,U])(combine:(T,U)=>V):Parser[S,V]	=
+		this.zipWith(that)(combine)
 
 	def tag[U](it:U):Parser[S,U]	=
 		self map constant(it)
@@ -215,6 +245,9 @@ abstract class Parser[S,+T] { self =>
 		self next that map { _._2 }
 
 	//------------------------------------------------------------------------------
+
+	def flag:Parser[S,Boolean]	=
+		self.option map (_.isDefined)
 
 	def option:Parser[S,Option[T]]	=
 		input => {
@@ -242,11 +275,11 @@ abstract class Parser[S,+T] { self =>
 
 	def times(count:Int):Parser[S,Seq[T]]	=
 		// TODO get at the name of self for this
-		self timesUpTo count	ensure ( _.size == count) named s"exactly ${count.toString} times"
+		self timesUpTo count	filter ( _.size == count) named s"exactly ${count.toString} times"
 
 	def timesInRange(min:Int, max:Int):Parser[S,Seq[T]]	=
 		// TODO get at the name of self for this
-		self timesUpTo max		ensure (_.size >= min) named s"between ${min.toString}  and ${max.toString} times"
+		self timesUpTo max		filter (_.size >= min) named s"between ${min.toString}  and ${max.toString} times"
 
 	def timesUpTo(count:Int):Parser[S,Seq[T]]	=
 		input => {
@@ -301,11 +334,11 @@ abstract class Parser[S,+T] { self =>
 	//------------------------------------------------------------------------------
 
 	// TODO inside in oldschool does what nest does here!
-	def inside(quote:Parser[S,Any]):Parser[S,T]	=
-		quote right self left quote
+	@deprecated("use within", "0.170.0")
+	def inside(quote:Parser[S,Any]):Parser[S,T]	= within(quote)
 
-	def flag:Parser[S,Boolean]	=
-		self.option map (_.isDefined)
+	def within(quote:Parser[S,Any]):Parser[S,T]	=
+		quote right self left quote
 
 	//------------------------------------------------------------------------------
 
@@ -332,6 +365,7 @@ abstract class Parser[S,+T] { self =>
 	def finish(ws:Parser[S,Any]):Parser[S,T]	=
 		self.eatRight(ws).phrase
 
+	/** expects a full parse, fails if anything is left in the source */
 	def phrase:Parser[S,T]	=
 		self left Parser.end
 

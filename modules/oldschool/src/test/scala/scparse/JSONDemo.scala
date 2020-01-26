@@ -12,69 +12,69 @@ object JSONDemo {
 	}
 
 	object TestParsers extends Parsers[Option] with StringParsers[Option] with NaturalParsers[Option] {
-		lazy val json:StringParser[JSONValue]	= value.$
+		lazy val json:StringParser[JSONValue]	= value.phrase
 
 		// nonterminals
-		lazy val value:StringParser[JSONValue]			= (obj:StringParser[JSONValue]) | arr | str | num | tru | fls | nul
-		lazy val arr:StringParser[JSONArray]			= '[' ~> (value *% ',') <~ ']'	^^ JSONArray.apply
-		lazy val obj:StringParser[JSONObject]			= '{' ~> (elm  *% ',') <~ '}'	^^ JSONObject.apply
-		lazy val elm:StringParser[(String,JSONValue)]	= (stringLit <~ ':') ~ value	// OR str ~ (':' ~> value)
-		lazy val str:StringParser[JSONString]			= stringLit	^^ JSONString.apply
-		lazy val num:StringParser[JSONNumber]			= numberLit	^^ JSONNumber.apply
-		lazy val tru:StringParser[JSONBoolean]			= "true"	^^^ JSONBoolean(true)
-		lazy val fls:StringParser[JSONBoolean]			= "false"	^^^ JSONBoolean(false)
-		lazy val nul:StringParser[JSONValue]			= "null"	^^^ JSONNull
+		lazy val value:StringParser[JSONValue]			= (obj:StringParser[JSONValue]) alternate arr alternate str alternate num alternate tru alternate fls alternate nul
+		lazy val arr:StringParser[JSONArray]			= '[' right (value repeatSeparated1 ',') left ']'	map JSONArray.apply
+		lazy val obj:StringParser[JSONObject]			= '{' right (elm  repeatSeparated1 ',') left '}'	map JSONObject.apply
+		lazy val elm:StringParser[(String,JSONValue)]	= (stringLit left ':') next value	// OR str ~ (':' right value)
+		lazy val str:StringParser[JSONString]			= stringLit	map JSONString.apply
+		lazy val num:StringParser[JSONNumber]			= numberLit	map JSONNumber.apply
+		lazy val tru:StringParser[JSONBoolean]			= "true"	tag JSONBoolean(true)
+		lazy val fls:StringParser[JSONBoolean]			= "false"	tag JSONBoolean(false)
+		lazy val nul:StringParser[JSONValue]			= "null"	tag JSONNull
 
 		// string
 		lazy val stringLit:StringParser[String]	= {
-			lazy val stringChar:StringParser[Char]	= !'"' ~> !'\\' ~> any
-			lazy val stringEsc:StringParser[Char]	= '\\' ~> (
-													anyInclude('"', '\\', '/') |
-													('b' ^^^ '\b') |
-													('f' ^^^ '\f') |
-													('n' ^^^ '\n') |
-													('r' ^^^ '\r') |
-													('t' ^^^ '\t') |
-													('u' ~> hexChar))
-			lazy val hexChar:StringParser[Char]	= (digit | anyBetween('a','f')) *# 4 map { buildNumber(16, decodeNumber, _).toChar }
-			'"' ~> (stringEsc  | stringChar).* <~ '"' ^^ { _ mkString "" }
+			lazy val stringChar:StringParser[Char]	= '"'.not right '\\'.not right any
+			lazy val stringEsc:StringParser[Char]	= '\\' right (
+													anyInclude('"', '\\', '/') alternate
+													('b' tag '\b') alternate
+													('f' tag '\f') alternate
+													('n' tag '\n') alternate
+													('r' tag '\r') alternate
+													('t' tag '\t') alternate
+													('u' right hexChar))
+			lazy val hexChar:StringParser[Char]	= (digit alternate anyBetween('a','f')) repeatN 4 map { buildNumber(16, decodeNumber, _).toChar }
+			'"' right (stringEsc  alternate stringChar).repeat left '"' map { _ mkString "" }
 		}
 
 		// number
 		lazy val numberLit:StringParser[BigDecimal]	= {
 			val signBD:StringParser[BigDecimal=>BigDecimal]	= {
-				val minus:StringParser[BigDecimal=>BigDecimal]	= symbol("-") ^^^ (-_)
+				val minus:StringParser[BigDecimal=>BigDecimal]	= symbol("-") tag (-_)
 				val none:StringParser[BigDecimal=>BigDecimal]	= success(identity)
-				(minus | none)
+				(minus alternate none)
 			}
 
 			def body:StringParser[BigInt]	= natural
 
 			def frac:StringParser[(BigInt,Int)]		= {
 				def ok:StringParser[(BigInt,Int)]	= success((BigInt(0),0))
-				def nums:StringParser[(BigInt,Int)]	= digit.+ ^^ { it =>
+				def nums:StringParser[(BigInt,Int)]	= digit.repeat1 map { it =>
 					(buildNumber(10, decodeNumber, it), it.size)
 				}
-				'.' ~> (nums | ok) | ok
+				'.' right (nums alternate ok) alternate ok
 			}
 
 			val signBI:StringParser[BigInt=>BigInt]	= {
-				val plus:StringParser[BigInt=>BigInt]	= symbol("+") ^^^ identity
-				val minus:StringParser[BigInt=>BigInt]	= symbol("-") ^^^ (-_)
+				val plus:StringParser[BigInt=>BigInt]	= symbol("+") tag identity
+				val minus:StringParser[BigInt=>BigInt]	= symbol("-") tag (-_)
 				val none:StringParser[BigInt=>BigInt]	= success(identity)
-				(plus | minus | none)
+				(plus alternate minus alternate none)
 			}
 
 			def exp:StringParser[Int]	= {
 				def ok:StringParser[Int]	= success(0)
-				(anyInclude('e', 'E') ~> signBI <*> natural ^^ { _.toInt }) | ok
+				(anyInclude('e', 'E') right signBI pa natural map { _.toInt }) alternate ok
 			}
 
-			def signLess:StringParser[BigDecimal]	= (body ~ frac ~ exp) map { case ((b, (fb, fe)), e)	=>
+			def signLess:StringParser[BigDecimal]	= (body next frac next exp) map { case ((b, (fb, fe)), e)	=>
 				BigDecimal(b, -e) + BigDecimal(fb, fe-e)
 			}
 
-			signBD <*> signLess
+			signBD pa signLess
 		}
 	}
 }

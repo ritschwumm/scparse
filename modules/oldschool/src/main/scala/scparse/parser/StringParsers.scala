@@ -13,14 +13,14 @@ trait StringParsers[M[+_]] { self:Parsers[M] =>
 	def symbol(name:String):StringParser[String]		= token(name)
 	// def word:StringParser[List[Char]]				= token(anyIf(isPrintable).+)
 
-	def full[T](sub:StringParser[T]):StringParser[T]	= (space.?	~> sub).$
-	def token[T](sub:StringParser[T]):StringParser[T]	= sub		<~ space.?
-	def space:StringParser[List[Char]]					= white.+
+	def full[T](sub:StringParser[T]):StringParser[T]	= (space.option	right sub).phrase
+	def token[T](sub:StringParser[T]):StringParser[T]	= sub		left space.option
+	def space:StringParser[List[Char]]					= white.repeat
 
 	//------------------------------------------------------------------------------
 
 	def anyBetween(from:Char,to:Char):StringParser[Char]	=
-			self.any ^? { case c if c >= from && c <= to => c }
+			self.any collect { case c if c >= from && c <= to => c }
 	def anyCharsInclude(chars:String):StringParser[Char]	=
 			self anyInclude (chars:_*)
 	def anyCharsExclude(chars:String):StringParser[Char]	=

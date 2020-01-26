@@ -2,9 +2,10 @@ package scparse.oldschool
 
 /** parsing of natural numbers in Strings */
 trait NaturalParsers[M[+_]] { self:Parsers[M] with StringParsers[M] =>
-	def natural:StringParser[BigInt]	= naturalNZ | naturalZ
-	def naturalNZ:StringParser[BigInt]	= (digitNZ :: digit.*) ^^ { buildNumber(10, decodeNumber, _) }
-	def naturalZ:StringParser[BigInt]	= digitZ ^^^ 0L
+	def natural:StringParser[BigInt]	= naturalNZ alternate naturalZ
+
+	def naturalNZ:StringParser[BigInt]	= digit.repeat cons digitNZ map { buildNumber(10, decodeNumber, _) }
+	def naturalZ:StringParser[BigInt]	= digitZ tag 0L
 
 	def digitNZ:StringParser[Char]	= digit filter { _ != '0' }
 	def digitZ:StringParser[Char]	= self accept '0'
