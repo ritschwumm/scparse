@@ -289,18 +289,6 @@ abstract class Parser[S,+T] { self =>
 			loop(input, Vector.empty[T])
 		}
 
-	@deprecated("use vectorSepBy", "0.173.0")
-	def sepVector(sepa:Parser[S,Any]):Parser[S,Vector[T]]			= vectorSepBy(sepa)
-
-	@deprecated("use indexedSeqSepBy", "0.173.0")
-	def sepIndexedSeq(sepa:Parser[S,Any]):Parser[S,IndexedSeq[T]]	= indexedSeqSepBy(sepa)
-
-	@deprecated("use indexedSeqSepBy", "0.173.0")
-	def sepSeq(sepa:Parser[S,Any]):Parser[S,Seq[T]]					= seqSepBy(sepa)
-
-	@deprecated("use indexedSeqSepBy", "0.173.0")
-	def sepNes(sepa:Parser[S,Any]):Parser[S,Nes[T]]					= nesSepBy(sepa)
-
 	def vectorSepBy(sepa:Parser[S,Any]):Parser[S,Vector[T]]	=
 		self nesSepBy sepa map { _.toVector } orElse (Parser success Vector.empty)
 

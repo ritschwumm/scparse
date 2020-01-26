@@ -15,13 +15,6 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	implicit def liftValue[C](c:C):Parser[C,C]			= accept(c)
 	implicit def liftSeq[C](cs:Seq[C]):Parser[C,Seq[C]]	= literal(cs)
 
-	/** pattern matching helper */
-	@deprecated("use plain pairs or the -> matcher", "0.173.0")
-	object ~ {
-		@deprecated("use plain pairs or the -> matcher", "0.173.0")
-		def unapply[A,B](it:(A,B)):Option[(A,B)] = Some(it)
-	}
-
 	//------------------------------------------------------------------------------
 	//## factory
 
@@ -128,9 +121,6 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 			else						zeroM
 		}
 
-	@deprecated("use ahead", "0.173.0")
-	def guard[C,T](sub: =>Parser[C,T]):Parser[C,Unit] = ahead(sub)
-
 	/** checks, but never consumes any input */
 	def ahead[C,T](sub: =>Parser[C,T]):Parser[C,Unit] =
 		s => {
@@ -139,9 +129,6 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		}
 
 	//------------------------------------------------------------------------------
-
-	@deprecated("use end", "0.173.0")
-	def eof[C]:Parser[C,Unit]	= end
 
 	/** fails if anything is left in the source */
 	def end[C]:Parser[C,Unit]	= not(any)
@@ -250,8 +237,6 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	def literal[C](pattern:Seq[C]):Parser[C,Seq[C]]			= take(pattern.size) filter pattern.sameElements
 	def literalList[C](pattern:List[C]):Parser[C,List[C]]	= sequenceList(pattern map accept)
 
-	@deprecated("use satisfy", "0.173.0")
-	def anyIf[C](pred:C=>Boolean):Parser[C,C]	= satisfy(pred)
 	def satisfy[C](pred:C=>Boolean):Parser[C,C]	= filter(any[C], pred)
 	def anyInclude[C](cs:C*):Parser[C,C]		= satisfy { c => cs exists { c == _ } }
 	def anyExclude[C](cs:C*):Parser[C,C]		= satisfy { c => cs forall { c != _ } }
@@ -268,9 +253,6 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	// NOTE this is the same as alternateMultiple for PEG parsers
 	def preferMultiple[C,T](subs: =>Seq[Parser[C,T]]):Parser[C,T]	=
 		subs.foldLeft(failure:Parser[C,T])(prefer(_,_))
-
-	@deprecated("use sequenceList", "0.173.0")
-	def consMultiple[C,T](subs: =>List[Parser[C,T]]):Parser[C,List[T]]	= sequenceList(subs)
 
 	def sequenceList[C,T](subs: =>List[Parser[C,T]]):Parser[C,List[T]]	=
 		subs match {
