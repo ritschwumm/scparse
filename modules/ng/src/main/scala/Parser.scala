@@ -405,10 +405,6 @@ abstract class Parser[S,+T] { self =>
 	def finishLeft(ws:Parser[S,Any]):Parser[S,T]	=
 		self.eatLeft(ws).phrase
 
-	@deprecated("use finishRight", "0.177.0")
-	def finish(ws:Parser[S,Any]):Parser[S,T]	=
-		self.eatRight(ws).phrase
-
 	/** expects a full parse, fails if anything is left in the source */
 	def phrase:Parser[S,T]	=
 		self left Parser.end
