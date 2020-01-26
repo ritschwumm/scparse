@@ -54,25 +54,25 @@ object Parser {
 
 	// BETTER use Equal
 	@deprecated("use acceptSet", "0.170.0")
-	def isInSet[S](cs:Set[S]):Parser[S,S]	= acceptSet(cs)
+	def isInSet[S](cs:Set[S]):Parser[S,S]	= inSet(cs)
 
 	@deprecated("use acceptInRange", "0.170.0")
-	def isInRange[S:Ordering](min:S, max:S):Parser[S,S]	= acceptRange(min, max)
+	def isInRange[S:Ordering](min:S, max:S):Parser[S,S]	= inRange(min, max)
 
-	def acceptSet[S](cs:Set[S]):Parser[S,S]	=
+	def inSet[S](cs:Set[S]):Parser[S,S]	=
 		any[S] filter cs.contains named "item in set"
 
-	def acceptRange[S:Ordering](min:S, max:S):Parser[S,S]	=
+	def inRange[S:Ordering](min:S, max:S):Parser[S,S]	=
 		any[S] filter (it => it >= min && it <= max) named "item in range"
 
 	// BETTER use Equal
-	def is[S](c:S):Parser[S,Unit]	=
-		any[S].filter (_ == c).void named "specific item"
+	def is[S](c:S):Parser[S,S]	=
+		any[S].filter (_ == c) named "specific item"
 
-	def isSeq[S](cs:Seq[S]):Parser[S,Unit]	=
+	def isSeq[S](cs:Seq[S]):Parser[S,Seq[S]]	=
 		input => {
 			@tailrec
-			def loop(input2:ParserInput[S], look:Seq[S]):ParserResult[S,Unit]	=
+			def loop(input2:ParserInput[S], look:Seq[S]):ParserResult[S,Seq[S]]	=
 					look match {
 						case lookHead +: lookTail	=>
 							 input2.next match {
@@ -80,7 +80,7 @@ object Parser {
 								case _										=> LeafFailure(input2.index, "end of input")
 							}
 						case _	=>
-							Success(input2, ())
+							Success(input2, cs)
 					}
 			loop(input, cs)
 		}
