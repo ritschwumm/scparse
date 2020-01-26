@@ -1,6 +1,7 @@
 package scparse.ng
 
 import scala.annotation.tailrec
+import scala.collection.IterableFactory
 import scala.collection.mutable
 
 import scutil.base.implicits._
@@ -10,6 +11,13 @@ import scutil.lang.tc._
 import scparse.ng.ParserResult._
 
 object Parser {
+	/** this is useful when building a recursive parser */
+	def defer[S,T](peer: =>Parser[S,T]):Parser[S,T]	=
+		new Parser[S,T] {
+			lazy val cached	= peer
+			def parse(input:ParserInput[S]):ParserResult[S,T]	= cached parse input
+		}
+
 	def pure[S,T](t:T):Parser[S,T]	= success(t)
 
 	def success[S,T](t:T):Parser[S,T]	=
@@ -72,8 +80,14 @@ object Parser {
 	def inSet[S](cs:Set[S]):Parser[S,S]	=
 		satisfy(cs.contains) named "item in set"
 
+	def notInSet[S](cs:Set[S]):Parser[S,S]	=
+		satisfy(!cs.contains(_:S)) named "item not in set"
+
 	def inRange[S:Ordering](min:S, max:S):Parser[S,S]	=
 		satisfy[S](it => it >= min && it <= max) named "item in range"
+
+	def notInRange[S:Ordering](min:S, max:S):Parser[S,S]	=
+		satisfy[S](it => it < min || it > max) named "item not in range"
 
 	// BETTER use Equal
 	def is[S](c:S):Parser[S,S]	=
@@ -98,15 +112,18 @@ object Parser {
 	def end[S]:Parser[S,Unit]	=
 		any[S].not
 
-	//------------------------------------------------------------------------------
-
 	// TODO if we had Foldable, this would work, too
 	def choice[S,T](parsers:Iterable[Parser[S,T]]):Parser[S,T]	=
 		(parsers foldLeft (Parser.failure[S]:Parser[S,T]))(_ orElse _)
 
+	//------------------------------------------------------------------------------
+
 	// NOTE we are applicative, so Iterable.traverse should work, too
 	def traverseVector[S,T](parsers:Vector[Parser[S,T]]):Parser[S,Vector[T]]	=
 		traverseSeq(parsers) map (_.toVector)
+
+	def traverseList[S,T](parsers:List[Parser[S,T]]):Parser[S,List[T]]	=
+		traverseSeq(parsers) map (_.toList)
 
 	// NOTE we are applicative, so Iterable.traverse should work, too
 	def traverseSeq[S,T](parsers:Seq[Parser[S,T]]):Parser[S,Seq[T]]	=
@@ -114,6 +131,9 @@ object Parser {
 			case head +: tail	=> (head nextWith traverseSeq(tail)) { _ +: _}
 			case _				=> Parser success Vector.empty
 		}
+
+	def traverseNes[S,T](parsers:Nes[Parser[S,T]]):Parser[S,Nes[T]]	=
+		traverseSeq(parsers.toVector) map { it => Nes fromSeq it getOrError "nes parser always expected to create at least 1 result" }
 
 	//------------------------------------------------------------------------------
 
@@ -129,11 +149,6 @@ abstract class Parser[S,+T] { self =>
 	def parse(input:ParserInput[S]):ParserResult[S,T]
 
 	//------------------------------------------------------------------------------
-
-	def optionBy(pred:Predicate[T]):Parser[S,Option[T]]	=
-		self map { it =>
-			pred(it) option it
-		}
 
 	def filter(pred:Predicate[T]):Parser[S,T]	=
 		self collapseMap (_ optionBy pred)
@@ -239,6 +254,11 @@ abstract class Parser[S,+T] { self =>
 	def flag:Parser[S,Boolean]	=
 		self.option map (_.isDefined)
 
+	def optionBy(pred:Predicate[T]):Parser[S,Option[T]]	=
+		self map { it =>
+			pred(it) option it
+		}
+
 	def option:Parser[S,Option[T]]	=
 		input => {
 			self parse input match {
@@ -262,7 +282,7 @@ abstract class Parser[S,+T] { self =>
 			loop(input, Vector.empty[T])
 		}
 
-	def list:Parser[S,List[T]]	= vector.map(_.toList)
+	def list:Parser[S,List[T]]	= vector map (_.toList)
 
 	def nes:Parser[S,Nes[T]]	=
 		self next self.seq map { case (x, xs) => Nes(x, xs) }
@@ -302,10 +322,27 @@ abstract class Parser[S,+T] { self =>
 		vectorSepBy(sepa) map (_.toList)
 
 	def nesSepBy(sepa:Parser[S,Any]):Parser[S,Nes[T]]	=
-		self next (sepa right self).seq map { case (x, xs) => Nes(x, xs) }
+		//self next (sepa right self).seq map { case (x, xs) => Nes(x, xs) }
+		self nesWith (sepa right self).seq
 
+	// TODO i need this for Vector (or IndexedSeq?)
 	def cons[TT>:T](that: =>Parser[S,List[TT]]):Parser[S,List[TT]]	=
 		(this nextWith that)(_ :: _)
+
+	def nesWith[TT>:T](that: =>Parser[S,Seq[TT]]):Parser[S,Nes[TT]]	=
+		(this nextWith that)(Nes.apply)
+
+	//------------------------------------------------------------------------------
+
+	def seqTo[CC[_],U](factory:IterableFactory[CC])(implicit ev:T=>IterableOnce[U]):Parser[S,CC[U]]	=
+		map { it =>
+			factory from it
+		}
+
+	def nesTo[CC[_],U](factory:IterableFactory[CC])(implicit ev:T=>Nes[U]):Parser[S,CC[U]]	=
+		map { it =>
+			factory from ev(it).toSeq
+		}
 
 	//------------------------------------------------------------------------------
 
@@ -352,12 +389,23 @@ abstract class Parser[S,+T] { self =>
 
 	//------------------------------------------------------------------------------
 
+	/** eatLeft and finishRight combine into a tokenizer, as eatRight and finishLeft do */
 	def eatLeft(ws:Parser[S,Any]):Parser[S,T]	=
 		ws.option right self
 
+	/** eatLeft and finishRight combine into a tokenizer, as eatRight and finishLeft do */
 	def eatRight(ws:Parser[S,Any]):Parser[S,T]	=
 		self left ws.option
 
+	/** eatLeft and finishRight combine into a tokenizer, as eatRight and finishLeft do */
+	def finishRight(ws:Parser[S,Any]):Parser[S,T]	=
+		self.eatRight(ws).phrase
+
+	/** eatLeft and finishRight combine into a tokenizer, as eatRight and finishLeft do */
+	def finishLeft(ws:Parser[S,Any]):Parser[S,T]	=
+		self.eatLeft(ws).phrase
+
+	@deprecated("use finishRight", "0.177.0")
 	def finish(ws:Parser[S,Any]):Parser[S,T]	=
 		self.eatRight(ws).phrase
 

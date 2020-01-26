@@ -8,7 +8,7 @@ package object binary {
 	//------------------------------------------------------------------------------
 
 	implicit class BinaryParserNestOps(peer:BinaryParser[ByteString]) {
-		def nestBinaryString[T](inner:BinaryParser[T]):Parser[Byte,T]	=
+		def nestByteString[T](inner:BinaryParser[T]):Parser[Byte,T]	=
 			peer nest (ByteStringInput.of, inner)
 	}
 
