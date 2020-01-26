@@ -9,12 +9,12 @@ package object binary {
 
 	implicit class BinaryParserNestOps(peer:BinaryParser[ByteString]) {
 		def nestBinaryString[T](inner:BinaryParser[T]):Parser[Byte,T]	=
-			peer nest (BinaryInput.of, inner)
+			peer nest (ByteStringInput.of, inner)
 	}
 
 	implicit class BinaryParserParseOps[T](peer:BinaryParser[T]) {
 		def parseByteString(s:ByteString):ParserResult[Byte,T]	=
-			peer parse (BinaryInput of s)
+			peer parse (ByteStringInput of s)
 	}
 
 	implicit class BinaryParserStringifySeqOps[T](peer:Parser[T,Seq[Byte]]) {

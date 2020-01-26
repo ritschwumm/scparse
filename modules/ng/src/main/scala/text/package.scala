@@ -9,12 +9,12 @@ package object text {
 
 	implicit class TextParserNestOps(peer:TextParser[String]) {
 		def nestString[T](inner:Parser[Char,T]):TextParser[T]	=
-			peer nest (TextInput.of, inner)
+			peer nest (StringInput.of, inner)
 	}
 
 	implicit class TextParserParseOps[T](peer:Parser[Char,T]) {
 		def parseString(s:String):ParserResult[Char,T]	=
-			peer parse (TextInput of s)
+			peer parse (StringInput of s)
 	}
 
 	implicit class TextParserStringifySeqOps[T](peer:Parser[T,Seq[Char]]) {

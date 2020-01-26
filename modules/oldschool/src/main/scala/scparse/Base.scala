@@ -83,6 +83,6 @@ trait Base[M[+_]] {
 	def alternateM[T](left:M[T], right:M[T]):M[T]
 	def preferM[T](left:M[T], right:M[T]):M[T]
 
-	final def filterMapM[S,T](in:M[S], func:S=>Option[T]):M[T]	= flatMapM(in,  func andThen optionM)
-	final def multiMapM[S,T](in:M[S], func:S=>Iterable[T]):M[T]	= flatMapM(in,  func andThen iterableM)
+	final def collapseMapM[S,T](in:M[S], func:S=>Option[T]):M[T]	= flatMapM(in,  func andThen optionM)
+	final def multiMapM[S,T](in:M[S], func:S=>Iterable[T]):M[T]		= flatMapM(in,  func andThen iterableM)
 }

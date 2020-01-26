@@ -58,10 +58,13 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 
 	// TODO add filterNot
 
-	def filterMap[C,T,U](sub: =>Parser[C,T], func:T=>Option[U]):Parser[C,U]	=
+	@deprecated("use collapseMap", "0.172.0")
+	def filterMap[C,T,U](sub: =>Parser[C,T], func:T=>Option[U]):Parser[C,U]	= collapseMap(sub, func)
+
+	def collapseMap[C,T,U](sub: =>Parser[C,T], func:T=>Option[U]):Parser[C,U]	=
 		// Parser(s => sub(s) flatMap { rt => func(rt._2) map { (rt._1, _) } })
 		Parser { (s:Source[C]) =>
-			filterMapM(
+			collapseMapM(
 				sub(s),
 				(it:Item[C,T]) => func(it._2) map {(it._1, _)}
 			)
@@ -146,7 +149,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 
 	/** scalaesque filterMap using a PartialFunction */
 	def collect[C,T,U](sub: =>Parser[C,T], func:PartialFunction[T,U]):Parser[C,U]	=
-		filterMap(sub, func.lift)
+		collapseMap(sub, func.lift)
 
 	/** returns a fixed value on success */
 	def tag[C,T,U](sub: =>Parser[C,T], value: =>U):Parser[C,U]	=
@@ -272,7 +275,10 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	//## extras
 
 	/** ignore the output, just check for a match */
-	def test[C,T](sub: =>Parser[C,T]):Parser[C,Unit]	= tag(sub, ())
+	def void[C,T](sub: =>Parser[C,T]):Parser[C,Unit]	= tag(sub, ())
+
+	@deprecated("use void", "0.172.0")
+	def test[C,T](sub: =>Parser[C,T]):Parser[C,Unit]	= void(sub)
 
 	/** gives a fixed number of input tokens  */
 	def take[C,T](count:Int):Parser[C,Seq[C]]	= {
@@ -428,7 +434,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	trait Parser[C,+T] extends ParseFunc[C,T] {
 		//## entry
 
-		def parse(s:Source[C]):M[T]	=
+		def parsePhrase(s:Source[C]):M[T]	=
 			mapM(
 				this.phrase apply s,
 				(it:Item[C,T]) => it._2
@@ -458,21 +464,20 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		def prefer  [U>:T](that: =>Parser[C,U]):Parser[C,U]		= outer prefer		(this, that)
 
 		def collect [U](func:PartialFunction[T,U]):Parser[C,U]	= outer collect		(this, func)
-		def collapseMap[U](func:T=>Option[U]):Parser[C,U]		= outer filterMap	(this, func)
+		def collapseMap[U](func:T=>Option[U]):Parser[C,U]		= outer collapseMap	(this, func)
 		def ap[U](that: =>Parser[C,T=>U]):Parser[C,U]			= outer applicate	(that, this)
 		def pa[U,V](that: =>Parser[C,U])
 				(implicit witness:T<:<(U=>V)):Parser[C,V]		= outer applicate	(outer map (this, witness), that)
 
-		// TODO rename to "next"
 		def next [U](that: =>Parser[C,U]):Parser[C,(T,U)]		= outer next		(this, that)
 		def left[U](that: =>Parser[C,U]):Parser[C,T] 			= outer left		(this, that)
 		def right[U](that: =>Parser[C,U]):Parser[C,U]			= outer right		(this, that)
 
-		// TODO should not be eager, see https://issues.scala-lang.org/browse/SI-1980
-		def cons[U](that: Parser[C,U])(implicit witness:T<:<List[U]):Parser[C,List[U]]	=
-			outer cons		(that, outer map (this, witness))
-		def conses[U](that: Parser[C,List[U]])(implicit witness:T<:<List[U]):Parser[C,List[U]]	=
-			outer conses		(that, outer map (this, witness))
+		def cons[TT>:T](that: =>Parser[C,List[TT]]):Parser[C,List[TT]]	=
+			outer cons		(this, that)
+
+		def conses[U>:T](that: =>Parser[C,List[U]])(implicit witness:T<:<List[U]):Parser[C,List[U]]	=
+			outer conses	(outer map (this, witness), that)
 
 		def not :Parser[C,Unit]			= outer not		(this)
 
@@ -489,67 +494,49 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 
 		def phrase :Parser[C,T]											= outer phrase	(this)
 
+		def nest[D,U](mkSource:T=>Source[D], inner:Parser[D,U]):Parser[C,U]	=
+			outer.inside(this, inner)(mkSource)
+
+		//def inside[C,D,DS,T](a: =>Parser[C,DS], b: =>Parser[D,T])(implicit ev:DS=>Source[D]):Parser[C,T] = {
+
+		/*
 		//## dsl
 
-		@deprecated("use alternate", "0.170.0")
 		def |  [U>:T](that: =>Parser[C,U]):Parser[C,U]				= outer alternate	(this, that)
-		@deprecated("use prefer", "0.170.0")
 		def /  [U>:T](that: =>Parser[C,U]):Parser[C,U]				= outer prefer		(this, that)
-		@deprecated("use filter", "0.170.0")
 		def ??    (func:T=>Boolean):Parser[C,T]						= outer filter		(this, func)
-		@deprecated("use map", "0.170.0")
 		def ^^ [U](func:T=>U):Parser[C,U]							= outer map			(this, func)
-		@deprecated("use tag", "0.170.0")
 		def ^^^[U](value: =>U):Parser[C,U]							= outer tag			(this, value)
-		@deprecated("use collect", "0.170.0")
 		def ^? [U](func:PartialFunction[T,U]):Parser[C,U]			= outer collect		(this, func)
-		@deprecated("use collapseMap", "0.170.0")
 		def ^^?[U](func:T=>Option[U]):Parser[C,U]					= outer filterMap	(this, func)
-		@deprecated("use flatMap", "0.170.0")
 		def ==>[U](func:T=>Parser[C,U]):Parser[C,U]					= outer flatMap		(this, func)
-		@deprecated("use pa", "0.170.0")
 		def <*>[U,V](that: =>Parser[C,U])
 				(implicit witness:T<:<(U=>V)):Parser[C,V]			= outer applicate	(outer map (this, witness), that)
-		@deprecated("use ap", "0.170.0")
 		def <**>[U](that: =>Parser[C,T=>U]):Parser[C,U]				= outer applicate	(that, this)
 
-		@deprecated("use next", "0.170.0")
 		def ~ [U](that: =>Parser[C,U]):Parser[C,(T,U)]				= outer next	(this, that)
-		@deprecated("use left", "0.170.0")
 		def <~[U](that: =>Parser[C,U]):Parser[C,T] 					= outer left		(this, that)
-		@deprecated("use right", "0.170.0")
 		def ~>[U](that: =>Parser[C,U]):Parser[C,U]					= outer right		(this, that)
-		@deprecated("use cons", "0.170.0")
 		// TODO should not be eager, see https://issues.scala-lang.org/browse/SI-1980
 		def ::[U](that: Parser[C,U])
 				(implicit witness:T<:<List[U]):Parser[C,List[U]]	= outer cons		(that, outer map (this, witness))
-		@deprecated("use conses", "0.170.0")
 		def :::[U](that: Parser[C,List[U]])
 				(implicit witness:T<:<List[U]):Parser[C,List[U]]	= outer conses		(that, outer map (this, witness))
 
-		@deprecated("use not", "0.170.0")
 		def unary_! :Parser[C,Unit]									= outer not		(this)
 
-		@deprecated("use option", "0.170.0")
 		def ? :Parser[C,Option[T]]									= outer option	(this)
-		@deprecated("use repeat", "0.170.0")
 		def * :Parser[C,List[T]]									= outer repeat	(this)
-		@deprecated("use repeat1", "0.170.0")
 		def + :Parser[C,List[T]]									= outer repeat1	(this)
 
-		@deprecated("use repeatN", "0.170.0")
 		def *#(count:Int):Parser[C,List[T]]							= outer repeatN	(this, count)
-		@deprecated("use repeatSeparated", "0.170.0")
 		def *%[U](separator: =>Parser[C,U]):Parser[C,List[T]]		= outer repeatSeparated		(this, separator)
-		@deprecated("use repeatSeparated1", "0.170.0")
 		def +%[U](separator: =>Parser[C,U]):Parser[C,List[T]]		= outer repeatSeparated1	(this, separator)
 
-		@deprecated("use chainLeft", "0.170.0")
 		def <<[U>:T](operator: =>Parser[C,(U,U)=>U]):Parser[C,U]	= outer chainLeft			(this, operator)
-		@deprecated("use chainRight", "0.170.0")
 		def >>[U>:T](operator: =>Parser[C,(U,U)=>U]):Parser[C,U]	= outer chainRight			(this, operator)
 
-		@deprecated("use phrase", "0.170.0")
 		def $ :Parser[C,T]											= outer phrase	(this)
+		*/
 	}
 }

@@ -1,6 +1,7 @@
 package scparse.ng
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 import scutil.base.implicits._
 import scutil.lang._
@@ -14,6 +15,8 @@ object Parser {
 	def success[S,T](t:T):Parser[S,T]	=
 		input => ParserResult.Success(input, t)
 
+	def unit[S]:Parser[S,Unit]	= pure(())
+
 	def failure[S]:Parser[S,Nothing]	=
 		input => ParserResult.Failure(input.index, List.empty)
 
@@ -26,6 +29,13 @@ object Parser {
 			case Some(t)	=> success(t)
 		}
 
+	def guard[S](condition:Boolean):Parser[S,Unit]	=
+		if (condition)	unit
+		else			failure
+
+	def prevent[S](condition:Boolean):Parser[S,Unit]	=
+		guard(!condition)
+
 	//------------------------------------------------------------------------------
 
 	def any[S]:Parser[S,S]	=
@@ -36,10 +46,14 @@ object Parser {
 			}
 		}
 
+	@deprecated("use take", "0.172.0")
 	def anyCount[S](count:Int):Parser[S,Seq[S]]	=
+		take(count)
+
+	def take[S](count:Int):Parser[S,IndexedSeq[S]]	=
 		input => {
 			@tailrec
-			def loop(input2:ParserInput[S], accu:Vector[S]):ParserResult[S,Seq[S]]	=
+			def loop(input2:ParserInput[S], accu:Vector[S]):ParserResult[S,IndexedSeq[S]]	=
 				if (accu.size == count) {
 					Success(input2, accu)
 				}
@@ -52,22 +66,22 @@ object Parser {
 			loop(input, Vector.empty)
 		}
 
-	// BETTER use Equal
-	@deprecated("use acceptSet", "0.170.0")
-	def isInSet[S](cs:Set[S]):Parser[S,S]	= inSet(cs)
+	// TODO can be optimized quite a bit
+	def remainder[S]:Parser[S,IndexedSeq[S]]	=
+		any.vector
 
-	@deprecated("use acceptInRange", "0.170.0")
-	def isInRange[S:Ordering](min:S, max:S):Parser[S,S]	= inRange(min, max)
+	def satisfy[S](pred:Predicate[S]):Parser[S,S]		=
+		any filter pred
 
 	def inSet[S](cs:Set[S]):Parser[S,S]	=
-		any[S] filter cs.contains named "item in set"
+		satisfy(cs.contains) named "item in set"
 
 	def inRange[S:Ordering](min:S, max:S):Parser[S,S]	=
-		any[S] filter (it => it >= min && it <= max) named "item in range"
+		satisfy[S](it => it >= min && it <= max) named "item in range"
 
 	// BETTER use Equal
 	def is[S](c:S):Parser[S,S]	=
-		any[S].filter (_ == c) named "specific item"
+		satisfy[S](_ == c) named "specific item"
 
 	def isSeq[S](cs:Seq[S]):Parser[S,Seq[S]]	=
 		input => {
@@ -86,7 +100,7 @@ object Parser {
 		}
 
 	def end[S]:Parser[S,Unit]	=
-		any[S].prevents
+		any[S].not
 
 	//------------------------------------------------------------------------------
 
@@ -120,26 +134,14 @@ abstract class Parser[S,+T] { self =>
 
 	//------------------------------------------------------------------------------
 
+	@deprecated("use optionBy", "0.172.0")
 	def when(pred:Predicate[T]):Parser[S,Option[T]]	=
+		optionBy(pred)
+
+	def optionBy(pred:Predicate[T]):Parser[S,Option[T]]	=
 		self map { it =>
 			pred(it) option it
 		}
-
-	@deprecated("use filter", "0.170.0")
-	def ensure(pred:Predicate[T]):Parser[S,T]	= filter(pred)
-
-	@deprecated("use collapse", "0.170.0")
-	def required[U](implicit ev:T=>Option[U]):Parser[S,U]	= collapse
-
-	@deprecated("use collapseNamed", "0.170.0")
-	def requiredFor[U](name:String)(implicit ev:T=>Option[U]):Parser[S,U]	=
-		self.collapse named name
-
-	@deprecated("use collect", "0.170.0")
-	def requirePartial[U](func:PartialFunction[T,U]):Parser[S,U]	= collect(func)
-
-	@deprecated("use collapseMap", "0.170.0")
-	def require[U](func:T=>Option[U]):Parser[S,U]	= collapseMap(func)
 
 	def filter(pred:Predicate[T]):Parser[S,T]	=
 		self collapseMap (_ optionBy pred)
@@ -167,14 +169,6 @@ abstract class Parser[S,+T] { self =>
 		self.collapse named name
 
 	def collect[U](func:PartialFunction[T,U]):Parser[S,U]	= self collapseMap func.lift
-
-	def named(error:String):Parser[S,T]	=
-		input => {
-			self parse input match {
-				case Success(tail, value)	=> Success(tail, value)
-				case Failure(index, errors)	=> Failure(index, error :: errors)
-			}
-		}
 
 	//------------------------------------------------------------------------------
 
@@ -219,6 +213,10 @@ abstract class Parser[S,+T] { self =>
 	// function effect first
 	def ap[U,V](that:Parser[S,U])(implicit ev:T=>(U=>V)):Parser[S,V]	=
 		for { a	<- self; b	<- that } yield a(b)
+
+	// parse effect first (!)
+	def pa[U](that:Parser[S,T=>U]):Parser[S,U]	=
+		for { a	<- self; b	<- that } yield b(a)
 
 	def zip[U](that:Parser[S,U]):Parser[S,(T,U)]	=
 		for { a	<- self; b	<- that } yield (a, b)
@@ -298,11 +296,17 @@ abstract class Parser[S,+T] { self =>
 	def sepVector(sepa:Parser[S,Any]):Parser[S,Vector[T]]	=
 		self sepNes sepa map { _.toVector } orElse (Parser success Vector.empty)
 
+	def sepIndexedSeq(sepa:Parser[S,Any]):Parser[S,IndexedSeq[T]]	=
+		sepVector(sepa)
+
 	def sepSeq(sepa:Parser[S,Any]):Parser[S,Seq[T]]	=
 		sepVector(sepa)
 
 	def sepNes(sepa:Parser[S,Any]):Parser[S,Nes[T]]	=
 		self next (sepa right self).seq map { case (x, xs) => Nes(x, xs) }
+
+	def cons[TT>:T](that: =>Parser[S,List[TT]]):Parser[S,List[TT]]	=
+		(this nextWith that)(_ :: _)
 
 	//------------------------------------------------------------------------------
 
@@ -333,19 +337,19 @@ abstract class Parser[S,+T] { self =>
 
 	//------------------------------------------------------------------------------
 
-	// TODO inside in oldschool does what nest does here!
-	@deprecated("use within", "0.170.0")
-	def inside(quote:Parser[S,Any]):Parser[S,T]	= within(quote)
-
 	def within(quote:Parser[S,Any]):Parser[S,T]	=
 		quote right self left quote
 
 	//------------------------------------------------------------------------------
 
+	@deprecated("use not.not", "0.172.0")
 	def guards:Parser[S,Unit]	=
-		self.prevents.prevents
+		self.not.not
 
-	def prevents:Parser[S,Unit]	=
+	@deprecated("use not", "0.172.0")
+	def prevents:Parser[S,Unit]	= not
+
+	def not:Parser[S,Unit]	=
 		input => {
 			self parse input match {
 				// TODO get at the name of self for this
@@ -371,6 +375,14 @@ abstract class Parser[S,+T] { self =>
 
 	//------------------------------------------------------------------------------
 
+	def named(error:String):Parser[S,T]	=
+		input => {
+			self parse input match {
+				case Success(tail, value)	=> Success(tail, value)
+				case Failure(index, errors)	=> Failure(index, error :: errors)
+			}
+		}
+
 	def nest[U,V](mkInput:T=>ParserInput[U], inner:Parser[U,V]):Parser[S,V]	=
 		selfInput => {
 			self parse selfInput match {
@@ -383,4 +395,38 @@ abstract class Parser[S,+T] { self =>
 				case Failure(index, errors)	=> Failure(index, errors)
 			}
 		}
+
+	def scanner:Parser[S,Seq[T]]	=
+		(input:ParserInput[S]) => {
+			val out	= mutable.ArrayBuffer.empty[T]
+			@tailrec
+			def loop(ss:ParserInput[S]):ParserResult[S,Seq[T]]	= {
+				self parse ss match {
+					case Success(rest, value)	=>
+						out	+= value
+						loop(rest)
+					case Failure(_, _) =>
+						// TODO ugly, but without match we don't get tailrec
+						val more	=
+							ss.next cata (
+								None,
+								{ case (rest,_) => Some(rest) }
+							)
+						more match {
+							case Some(x)	=> loop(x)
+							case None		=> Success(ss, out.toVector)
+						}
+				}
+			}
+			loop(input)
+		}
+
+	//------------------------------------------------------------------------------
+
+	def withFilter(predicate:T=>Boolean)	= new GenWithFilter(this, predicate)
+	class GenWithFilter(peer:Parser[S,T], predicate:T=>Boolean) {
+		def map[U](func:T=>U):Parser[S,U]					= peer filter predicate map func
+		def flatMap[U](func:T=>Parser[S,U]):Parser[S,U]		= peer filter predicate flatMap	func
+		def withFilter(further:T=>Boolean):GenWithFilter	= new GenWithFilter(peer, x => predicate(x) && further(x))
+	}
 }

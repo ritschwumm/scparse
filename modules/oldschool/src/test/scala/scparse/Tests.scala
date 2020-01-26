@@ -11,7 +11,7 @@ class Tests extends Specification {
 
 	"simple demo" should {
 		"just work" in {
-			SimpleDemo.TestParsers.foo parse "aab" mustEqual Some((List('a','a'),List('b')))
+			SimpleDemo.TestParsers.foo parsePhrase "aab" mustEqual Some((List('a','a'),List('b')))
 		}
 	}
 

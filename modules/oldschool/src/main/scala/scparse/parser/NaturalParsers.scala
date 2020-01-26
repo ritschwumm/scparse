@@ -4,7 +4,7 @@ package scparse.oldschool
 trait NaturalParsers[M[+_]] { self:Parsers[M] with StringParsers[M] =>
 	def natural:StringParser[BigInt]	= naturalNZ alternate naturalZ
 
-	def naturalNZ:StringParser[BigInt]	= digit.repeat cons digitNZ map { buildNumber(10, decodeNumber, _) }
+	def naturalNZ:StringParser[BigInt]	= digitNZ cons digit.repeat map { buildNumber(10, decodeNumber, _) }
 	def naturalZ:StringParser[BigInt]	= digitZ tag 0L
 
 	def digitNZ:StringParser[Char]	= digit filter { _ != '0' }
