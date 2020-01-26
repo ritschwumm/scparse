@@ -5,7 +5,7 @@ import org.specs2.mutable._
 class Tests extends Specification {
 	"calculator demo" should {
 		"just work" in {
-			CalculatorDemo.TestParsers complete """4 - 2 * 3 ^ 2""" map { _._2 } mustEqual Some(-14)
+			CalculatorDemo.TestParsers.complete parse """4 - 2 * 3 ^ 2""" map { _._2 } mustEqual Some(-14)
 		}
 	}
 
@@ -17,7 +17,7 @@ class Tests extends Specification {
 
 	"json demo" should {
 		"just work" in {
-			JSONDemo.TestParsers json "-2.3E+10" map { _._2 } mustEqual Some(JSONNumber(-2.3E+10))
+			JSONDemo.TestParsers.json parse "-2.3E+10" map { _._2 } mustEqual Some(JSONNumber(-2.3E+10))
 		}
 	}
 }

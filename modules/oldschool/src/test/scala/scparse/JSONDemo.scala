@@ -7,7 +7,7 @@ object JSONDemo {
 		//val str	= "\"\\u0041\""
 		//val str	= """-10.707e+1"""
 		val str	= "-2.3E+10"
-		val res	= TestParsers json str
+		val res	= TestParsers.json parse str
 		println(res)
 	}
 

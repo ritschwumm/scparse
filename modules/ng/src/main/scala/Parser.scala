@@ -46,10 +46,6 @@ object Parser {
 			}
 		}
 
-	@deprecated("use take", "0.172.0")
-	def anyCount[S](count:Int):Parser[S,Seq[S]]	=
-		take(count)
-
 	def take[S](count:Int):Parser[S,IndexedSeq[S]]	=
 		input => {
 			@tailrec
@@ -133,10 +129,6 @@ abstract class Parser[S,+T] { self =>
 	def parse(input:ParserInput[S]):ParserResult[S,T]
 
 	//------------------------------------------------------------------------------
-
-	@deprecated("use optionBy", "0.172.0")
-	def when(pred:Predicate[T]):Parser[S,Option[T]]	=
-		optionBy(pred)
 
 	def optionBy(pred:Predicate[T]):Parser[S,Option[T]]	=
 		self map { it =>
@@ -257,6 +249,8 @@ abstract class Parser[S,+T] { self =>
 
 	def seq:Parser[S,Seq[T]]	= vector
 
+	def indexedSeq:Parser[S,IndexedSeq[T]]	= vector
+
 	def vector:Parser[S,Vector[T]]	=
 		input => {
 			@tailrec
@@ -268,21 +262,23 @@ abstract class Parser[S,+T] { self =>
 			loop(input, Vector.empty[T])
 		}
 
+	def list:Parser[S,List[T]]	= vector.map(_.toList)
+
 	def nes:Parser[S,Nes[T]]	=
 		self next self.seq map { case (x, xs) => Nes(x, xs) }
 
-	def times(count:Int):Parser[S,Seq[T]]	=
+	def times(count:Int):Parser[S,IndexedSeq[T]]	=
 		// TODO get at the name of self for this
 		self timesUpTo count	filter ( _.size == count) named s"exactly ${count.toString} times"
 
-	def timesInRange(min:Int, max:Int):Parser[S,Seq[T]]	=
+	def timesInRange(min:Int, max:Int):Parser[S,IndexedSeq[T]]	=
 		// TODO get at the name of self for this
 		self timesUpTo max		filter (_.size >= min) named s"between ${min.toString}  and ${max.toString} times"
 
-	def timesUpTo(count:Int):Parser[S,Seq[T]]	=
+	def timesUpTo(count:Int):Parser[S,IndexedSeq[T]]	=
 		input => {
 			@tailrec
-			def loop(input1:ParserInput[S], accu:Seq[T]):ParserResult[S,Seq[T]]	=
+			def loop(input1:ParserInput[S], accu:IndexedSeq[T]):ParserResult[S,IndexedSeq[T]]	=
 					if (accu.size == count)	Success(input1, accu)
 					else {
 						self parse input1 match {
@@ -293,16 +289,31 @@ abstract class Parser[S,+T] { self =>
 			loop(input, Vector.empty[T])
 		}
 
-	def sepVector(sepa:Parser[S,Any]):Parser[S,Vector[T]]	=
-		self sepNes sepa map { _.toVector } orElse (Parser success Vector.empty)
+	@deprecated("use vectorSepBy", "0.173.0")
+	def sepVector(sepa:Parser[S,Any]):Parser[S,Vector[T]]			= vectorSepBy(sepa)
 
-	def sepIndexedSeq(sepa:Parser[S,Any]):Parser[S,IndexedSeq[T]]	=
-		sepVector(sepa)
+	@deprecated("use indexedSeqSepBy", "0.173.0")
+	def sepIndexedSeq(sepa:Parser[S,Any]):Parser[S,IndexedSeq[T]]	= indexedSeqSepBy(sepa)
 
-	def sepSeq(sepa:Parser[S,Any]):Parser[S,Seq[T]]	=
-		sepVector(sepa)
+	@deprecated("use indexedSeqSepBy", "0.173.0")
+	def sepSeq(sepa:Parser[S,Any]):Parser[S,Seq[T]]					= seqSepBy(sepa)
 
-	def sepNes(sepa:Parser[S,Any]):Parser[S,Nes[T]]	=
+	@deprecated("use indexedSeqSepBy", "0.173.0")
+	def sepNes(sepa:Parser[S,Any]):Parser[S,Nes[T]]					= nesSepBy(sepa)
+
+	def vectorSepBy(sepa:Parser[S,Any]):Parser[S,Vector[T]]	=
+		self nesSepBy sepa map { _.toVector } orElse (Parser success Vector.empty)
+
+	def indexedSeqSepBy(sepa:Parser[S,Any]):Parser[S,IndexedSeq[T]]	=
+		vectorSepBy(sepa)
+
+	def seqSepBy(sepa:Parser[S,Any]):Parser[S,Seq[T]]	=
+		vectorSepBy(sepa)
+
+	def listSepBy(sepa:Parser[S,Any]):Parser[S,List[T]]	=
+		vectorSepBy(sepa) map (_.toList)
+
+	def nesSepBy(sepa:Parser[S,Any]):Parser[S,Nes[T]]	=
 		self next (sepa right self).seq map { case (x, xs) => Nes(x, xs) }
 
 	def cons[TT>:T](that: =>Parser[S,List[TT]]):Parser[S,List[TT]]	=
@@ -341,13 +352,6 @@ abstract class Parser[S,+T] { self =>
 		quote right self left quote
 
 	//------------------------------------------------------------------------------
-
-	@deprecated("use not.not", "0.172.0")
-	def guards:Parser[S,Unit]	=
-		self.not.not
-
-	@deprecated("use not", "0.172.0")
-	def prevents:Parser[S,Unit]	= not
 
 	def not:Parser[S,Unit]	=
 		input => {

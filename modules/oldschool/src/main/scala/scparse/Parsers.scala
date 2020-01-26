@@ -8,7 +8,6 @@ import scutil.lang._
 class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	import base._
 
-	type ParseFunc[C,+T]	= Source[C]=>Result[C,T]
 	type Result[+C,+T]		= M[Item[C,T]]
 	type Item[+C,+T]		= (Source[C],T)
 
@@ -17,55 +16,53 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	implicit def liftSeq[C](cs:Seq[C]):Parser[C,Seq[C]]	= literal(cs)
 
 	/** pattern matching helper */
+	@deprecated("use plain pairs or the -> matcher", "0.173.0")
 	object ~ {
+		@deprecated("use plain pairs or the -> matcher", "0.173.0")
 		def unapply[A,B](it:(A,B)):Option[(A,B)] = Some(it)
 	}
 
 	//------------------------------------------------------------------------------
 	//## factory
 
-	def Parser[C,T](func:ParseFunc[C,T]):Parser[C,T]	=
+	def Parser[C,T](func:Source[C]=>Result[C,T]):Parser[C,T]	=
 		new Parser[C,T] {
-			def apply(s:Source[C]):Result[C,T]	= func(s)
+			def parse(s:Source[C]):Result[C,T]	= func(s)
 		}
 
 	// Pointed, aka unit aka return aka pure
 	def success[C,T](t:T):Parser[C,T]	=
-		Parser { it => unitM((it, t)) }
+		it => unitM((it, t))
 
 	// MonadZero, aka zero
 	def failure[C]:Parser[C,Nothing]	=
-		Parser(_ => zeroM)
+		_ => zeroM
 
 	// base case
 	def any[C]:Parser[C,C]	=
-		Parser(
-			_ cata (
-				zeroM,
-				(x,y) => unitM((x,y))
-			)
+		_ cata (
+			zeroM,
+			(x,y) => unitM((x,y))
 		)
 
 	// MonadZero (Alternative?)
 	def filter[C,T](sub: =>Parser[C,T], func:T=>Boolean):Parser[C,T] =
 		// Parser(s => sub(s) filter { rt => func(rt._2) })
-		Parser { s =>
+		s => {
 			filterM(
-				sub(s),
+				sub parse s,
 				(it:Item[C,T]) => func(it._2)
 			)
 		}
 
-	// TODO add filterNot
-
-	@deprecated("use collapseMap", "0.172.0")
-	def filterMap[C,T,U](sub: =>Parser[C,T], func:T=>Option[U]):Parser[C,U]	= collapseMap(sub, func)
+	def filterNot[C,T](sub: =>Parser[C,T], func:T=>Boolean):Parser[C,T] =
+		filter(sub, !func(_:T))
 
 	def collapseMap[C,T,U](sub: =>Parser[C,T], func:T=>Option[U]):Parser[C,U]	=
 		// Parser(s => sub(s) flatMap { rt => func(rt._2) map { (rt._1, _) } })
-		Parser { (s:Source[C]) =>
+		(s:Source[C]) => {
 			collapseMapM(
-				sub(s),
+				sub parse s,
 				(it:Item[C,T]) => func(it._2) map {(it._1, _)}
 			)
 		}
@@ -73,9 +70,9 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	// NOTE this just takes the first item for PEG parsers
 	def multiMap[C,T,U](sub: =>Parser[C,T], func:T=>Iterable[U]):Parser[C,U]	=
 		//Parser(s => sub(s) flatMap { rt => func(rt._2) map { (rt._1, _) } })
-		Parser { (s:Source[C]) =>
+		(s:Source[C]) => {
 			multiMapM(
-				sub(s),
+				sub parse s,
 				(it:Item[C,T]) => func(it._2) map {(it._1, _)}
 			)
 		}
@@ -83,9 +80,9 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	// Functor, aka fmap
 	def map[C,T,U](sub: =>Parser[C,T], func:T=>U):Parser[C,U]	=
 		//Parser(s => sub(s) map { rt => (rt._1, func(rt._2)) })
-		Parser { (s:Source[C]) =>
+		(s:Source[C]) => {
 			mapM(
-				sub(s),
+				sub parse s,
 				(it:Item[C,T]) => (it._1, func(it._2))
 			)
 		}
@@ -93,10 +90,10 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	// Monad, aka bind aka >==
 	def flatMap[C,T,U](sub: =>Parser[C,T], func:T=>Parser[C,U]):Parser[C,U]	=
 		// Parser(s => sub(s) flatMap { rt => func(rt._2)(rt._1) })
-		Parser { (s:Source[C]) =>
+		(s:Source[C]) => {
 			flatMapM(
-				sub(s),
-				(it:Item[C,T]) => func(it._2)(it._1)
+				sub parse s,
+				(it:Item[C,T]) => func(it._2) parse (it._1)
 			)
 		}
 
@@ -104,12 +101,12 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	def applicate[C,S,T](mapping: =>Parser[C,S=>T], value: =>Parser[C,S]):Parser[C,T] =
 		//Parser(s => mapping(s) flatMap { rf => value(rf._1) map { st => (st._1, rf._2(st._2)) } })
 		// TODO use applicM	if possible
-		Parser { (s:Source[C]) =>
+		(s:Source[C]) => {
 			flatMapM(
-				mapping(s),
+				mapping parse s,
 				(rf:Item[C,S=>T]) => {
 					mapM(
-						value(rf._1),
+						value parse rf._1,
 						{ st:Item[C,S] => (st._1, rf._2(st._2)) }
 					)
 				}
@@ -118,34 +115,40 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 
 	// MonadPlus (Alternative?)
 	def alternate[C,T,U>:T](first: =>Parser[C,T], second: =>Parser[C,U]):Parser[C,U]	=
-		Parser { s => alternateM(first(s), second(s)) }
+		s => alternateM(first parse s, second parse s)
 
 	/** prefer first parser over second */
 	def prefer[C,T,U>:T](first: =>Parser[C,T], second: =>Parser[C,U]):Parser[C,U]	=
-		Parser { s => preferM(first(s), second(s)) }
+		s => preferM(first parse s, second parse s)
 
 	/** swaps success and failure, never consumes any input */
 	def not[C,T](sub: =>Parser[C,T]):Parser[C,Unit] =
-		Parser { s =>
-			if (isEmptyM(sub(s)))	unitM((s, ()))
-			else					zeroM
+		s => {
+			if (isEmptyM(sub parse s))	unitM((s, ()))
+			else						zeroM
 		}
 
+	@deprecated("use ahead", "0.173.0")
+	def guard[C,T](sub: =>Parser[C,T]):Parser[C,Unit] = ahead(sub)
+
 	/** checks, but never consumes any input */
-	def guard[C,T](sub: =>Parser[C,T]):Parser[C,Unit] =
-		Parser { s =>
-			if (nonEmptyM(sub(s)))	unitM((s, ()))
-			else					zeroM
+	def ahead[C,T](sub: =>Parser[C,T]):Parser[C,Unit] =
+		s => {
+			if (nonEmptyM(sub parse s))	unitM((s, ()))
+			else						zeroM
 		}
 
 	//------------------------------------------------------------------------------
 
+	@deprecated("use end", "0.173.0")
+	def eof[C]:Parser[C,Unit]	= end
+
 	/** fails if anything is left in the source */
-	def eof[C,T]:Parser[C,Unit]	= not(any)
+	def end[C]:Parser[C,Unit]	= not(any)
 
 	/** expects a full parse, fails if anything is left in the source */
 	def phrase[C,T](sub: =>Parser[C,T]):Parser[C,T]	=
-		left(sub, eof)
+		left(sub, end)
 
 	/** scalaesque filterMap using a PartialFunction */
 	def collect[C,T,U](sub: =>Parser[C,T], func:PartialFunction[T,U]):Parser[C,U]	=
@@ -243,13 +246,15 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 
 	//------------------------------------------------------------------------------
 
-	def accept[C](pattern:C):Parser[C,C]					= anyIf	{ _ == pattern }
+	def accept[C](pattern:C):Parser[C,C]					= satisfy	{ _ == pattern }
 	def literal[C](pattern:Seq[C]):Parser[C,Seq[C]]			= take(pattern.size) filter pattern.sameElements
-	def literalList[C](pattern:List[C]):Parser[C,List[C]]	= consMultiple(pattern map accept)
+	def literalList[C](pattern:List[C]):Parser[C,List[C]]	= sequenceList(pattern map accept)
 
-	def anyIf[C](func:C=>Boolean):Parser[C,C]	= filter(any[C], func)
-	def anyInclude[C](cs:C*):Parser[C,C]		= anyIf { c => cs exists { c == _ } }
-	def anyExclude[C](cs:C*):Parser[C,C]		= anyIf { c => cs forall { c != _ } }
+	@deprecated("use satisfy", "0.173.0")
+	def anyIf[C](pred:C=>Boolean):Parser[C,C]	= satisfy(pred)
+	def satisfy[C](pred:C=>Boolean):Parser[C,C]	= filter(any[C], pred)
+	def anyInclude[C](cs:C*):Parser[C,C]		= satisfy { c => cs exists { c == _ } }
+	def anyExclude[C](cs:C*):Parser[C,C]		= satisfy { c => cs forall { c != _ } }
 
 	//------------------------------------------------------------------------------
 
@@ -264,10 +269,12 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	def preferMultiple[C,T](subs: =>Seq[Parser[C,T]]):Parser[C,T]	=
 		subs.foldLeft(failure:Parser[C,T])(prefer(_,_))
 
-	// looks like sequence
-	def consMultiple[C,T](subs: =>List[Parser[C,T]]):Parser[C,List[T]]	=
+	@deprecated("use sequenceList", "0.173.0")
+	def consMultiple[C,T](subs: =>List[Parser[C,T]]):Parser[C,List[T]]	= sequenceList(subs)
+
+	def sequenceList[C,T](subs: =>List[Parser[C,T]]):Parser[C,List[T]]	=
 		subs match {
-			case head :: tail	=> cons(head, consMultiple(tail))
+			case head :: tail	=> cons(head, sequenceList(tail))
 			case Nil			=> success(Nil)
 		}
 
@@ -276,9 +283,6 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 
 	/** ignore the output, just check for a match */
 	def void[C,T](sub: =>Parser[C,T]):Parser[C,Unit]	= tag(sub, ())
-
-	@deprecated("use void", "0.172.0")
-	def test[C,T](sub: =>Parser[C,T]):Parser[C,Unit]	= void(sub)
 
 	/** gives a fixed number of input tokens  */
 	def take[C,T](count:Int):Parser[C,Seq[C]]	= {
@@ -323,9 +327,9 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		def impl(sc:Source[C]):Result[C,T]	= {
 			val aRef	= a
 			val bRef	= b
-			val dss:Result[C,DS]	= aRef apply sc
+			val dss:Result[C,DS]	= aRef parse sc
 			val ts:Result[C,T]		= flatMapM(dss, (it:Item[C,DS]) => {
-				mapM(bRef apply it._2, { (jt:Item[D,T])	=>
+				mapM(bRef parse it._2, { (jt:Item[D,T])	=>
 					(it._1, jt._2)
 				})
 			})
@@ -347,7 +351,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 			var out:M[Step]		= current
 			while (true) {
 				val step:Step=>M[Step]	= { case (src,it) =>
-					val x:M[Part]	= subRef(src)
+					val x:M[Part]	= subRef parse src
 					val app:Part=>Step	= { case (s1,t1) =>
 						(s1, it :+ t1)
 					}
@@ -375,7 +379,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 			var current:M[Step]	= unitM((s, Vector.empty))
 			while (true) {
 				val step:Step=>M[Step]	= { case (src,it) =>
-					val x:M[Part]	= subRef(src)
+					val x:M[Part]	= subRef parse src
 					val app:Part=>Step	= { case (s1,t1) =>
 						(s1, it :+ t1)
 					}
@@ -393,37 +397,13 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		Parser(impl)
 	}
 
-	def fastRepeatAny[C]:Parser[C,Seq[C]]	= {
-		def impl(s:Source[C]):Result[C,Seq[C]]	= {
-			val seq	= mutable.ArrayBuffer.empty[C]
-			var	out:Result[C,Seq[C]]	= zeroM
-			var in	= s
-			while (true) {
-				val exit	=
-					in cata (
-						true,
-						(more,item)	=> {
-							seq += item
-							// TODO toVector is slow
-							out	= alternateM(unitM((more, seq.toVector)), out)
-							in	= more
-							false
-						}
-					)
-				if (exit)	return alternateM(out, unitM((s, Vector.empty)))
-			}
-			nothing
-		}
-		Parser(impl)
-	}
-
 	//------------------------------------------------------------------------------
 	//## debugging
 
 	def debug[C,T](sub: =>Parser[C,T], before:Effect[Source[C]], after:Effect[Result[C,T]]):Parser[C,T]	=
-		Parser { s =>
+		s => {
 			before(s)
-			val r = sub(s)
+			val r = sub parse s
 			after(r)
 			r
 		}
@@ -431,18 +411,18 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	//------------------------------------------------------------------------------
 	//## parser itself
 
-	trait Parser[C,+T] extends ParseFunc[C,T] {
+	trait Parser[C,+T] {
 		//## entry
 
 		def parsePhrase(s:Source[C]):M[T]	=
 			mapM(
-				this.phrase apply s,
+				this.phrase parse s,
 				(it:Item[C,T]) => it._2
 			)
 
 		//## scala
 
-		def apply(s:Source[C]):Result[C,T]
+		def parse(s:Source[C]):Result[C,T]
 
 		def map[U](func:T=>U):Parser[C,U]	= outer map		(this, func)
 		def tag[U](value: =>U):Parser[C,U]	= outer tag		(this, value)

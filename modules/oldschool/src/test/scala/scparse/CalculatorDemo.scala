@@ -4,7 +4,7 @@ import scparse.oldschool._
 
 object CalculatorDemo {
 	def main(args:Array[String]):Unit	= {
-		println(TestParsers complete """4 - 2 * 3 ^ 2""")
+		println(TestParsers.complete parse """4 - 2 * 3 ^ 2""")
 	}
 
 	object TestParsers extends Parsers[Option] with StringParsers[Option] with NaturalParsers[Option] {

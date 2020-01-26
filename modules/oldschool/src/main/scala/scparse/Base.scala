@@ -3,7 +3,7 @@ package scparse.oldschool
 import scutil.base.implicits._
 
 object Base {
-/** PEG-style always taking the longes alternative on repetitions */
+	/** PEG-style always taking the longes alternative on repetitions */
 	implicit object OptionBase extends Base[Option] {
 		type M[+X]	= Option[X]
 

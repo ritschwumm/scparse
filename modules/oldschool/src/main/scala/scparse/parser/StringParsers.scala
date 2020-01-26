@@ -19,26 +19,14 @@ trait StringParsers[M[+_]] { self:Parsers[M] =>
 
 	//------------------------------------------------------------------------------
 
-	def anyBetween(from:Char,to:Char):StringParser[Char]	=
-			self.any collect { case c if c >= from && c <= to => c }
-	def anyCharsInclude(chars:String):StringParser[Char]	=
-			self anyInclude (chars:_*)
-	def anyCharsExclude(chars:String):StringParser[Char]	=
-			self anyExclude (chars:_*)
+	def anyBetween(from:Char, to:Char):StringParser[Char]	= self.any collect { case c if c >= from && c <= to => c }
+	def anyCharsInclude(chars:String):StringParser[Char]	= self anyInclude (chars:_*)
+	def anyCharsExclude(chars:String):StringParser[Char]	= self anyExclude (chars:_*)
 
-	lazy val digit:StringParser[Char]	= self anyIf isDigit
-	lazy val letter:StringParser[Char]	= self anyIf isLetter
-	lazy val upper:StringParser[Char]	= self anyIf isUpper
-	lazy val lower:StringParser[Char]	= self anyIf isLower
-	lazy val white:StringParser[Char]	= self anyIf isWhitespace
-	lazy val control:StringParser[Char]	= self anyIf isControl
-
-	private val isDigit:Char=>Boolean		= _.isDigit
-	private val isLetter:Char=>Boolean		= _.isLetter
-	private val isUpper:Char=>Boolean		= _.isUpper
-	private val isLower:Char=>Boolean		= _.isLower
-	private val isWhitespace:Char=>Boolean	= _.isWhitespace
-	private val isControl:Char=>Boolean		= _.isControl
-
-	// private val isPrintable:Char=>Boolean	= it => !(it.isWhitespace || it.isControl)
+	lazy val digit:StringParser[Char]	= self satisfy (_.isDigit)
+	lazy val letter:StringParser[Char]	= self satisfy (_.isLetter)
+	lazy val upper:StringParser[Char]	= self satisfy (_.isUpper)
+	lazy val lower:StringParser[Char]	= self satisfy (_.isLower)
+	lazy val white:StringParser[Char]	= self satisfy (_.isWhitespace)
+	lazy val control:StringParser[Char]	= self satisfy (_.isControl)
 }
