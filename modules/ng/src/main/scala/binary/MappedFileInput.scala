@@ -12,7 +12,7 @@ import scparse.ng._
 object MappedFileInput {
 	def of(file:File):ParserInput[Byte]	= {
 		val	mapped	= new RandomAccessFile(file, "r").getChannel use { fc =>
-			fc map (FileChannel.MapMode.READ_ONLY, 0, file.length)
+			fc.map(FileChannel.MapMode.READ_ONLY, 0, file.length)
 		}
 		MappedFileInput(mapped, 0)
 	}

@@ -9,8 +9,8 @@ object TextParser {
 	def anyOf(s:String):TextParser[Char]			= Parser inSet		s.toSet				named s"any char in ${s}"
 	def noneOf(s:String):TextParser[Char]			= Parser notInSet	s.toSet				named s"any char except chars in ${s}"
 
-	def anyIn(from:Char, to:Char):TextParser[Char]	= Parser inRange	(from, to)			named s"any char between ${from.toString} and ${to.toString}"
-	def noneIn(from:Char, to:Char):TextParser[Char]	= Parser notInRange	(from, to)			named s"any char except chars between ${from.toString} and ${to.toString}"
+	def anyIn(from:Char, to:Char):TextParser[Char]	= Parser.inRange	(from, to)			named s"any char between ${from.toString} and ${to.toString}"
+	def noneIn(from:Char, to:Char):TextParser[Char]	= Parser.notInRange	(from, to)			named s"any char except chars between ${from.toString} and ${to.toString}"
 
 	def take(count:Int):TextParser[Seq[Char]]		= Parser take	count					named s"any ${count.toString} chars"
 	def takeString(count:Int):TextParser[String]	= take(count).stringify

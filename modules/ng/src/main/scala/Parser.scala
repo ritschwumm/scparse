@@ -444,7 +444,7 @@ abstract class Parser[S,+T] { self =>
 					case Failure(_, _) =>
 						// TODO ugly, but without match we don't get tailrec
 						val more	=
-							ss.next cata (
+							ss.next.cata(
 								None,
 								{ case (rest,_) => Some(rest) }
 							)

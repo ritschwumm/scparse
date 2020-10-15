@@ -10,7 +10,7 @@ import scutil.base.implicits._
 object MappedFileSource {
 	def of(file:File):MappedFileSource	= {
 		val	mapped	= new RandomAccessFile(file, "r").getChannel use { fc =>
-			fc map (FileChannel.MapMode.READ_ONLY, 0, file.length)
+			fc.map(FileChannel.MapMode.READ_ONLY, 0, file.length)
 		}
 		MappedFileSource(mapped, 0)
 	}

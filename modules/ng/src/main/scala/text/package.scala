@@ -9,7 +9,7 @@ package object text {
 
 	implicit class TextParserNestOps(peer:TextParser[String]) {
 		def nestString[T](inner:Parser[Char,T]):TextParser[T]	=
-			peer nest (StringInput.of, inner)
+			peer.nest (StringInput.of, inner)
 	}
 
 	implicit class TextParserParseOps[T](peer:Parser[Char,T]) {

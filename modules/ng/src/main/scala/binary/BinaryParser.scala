@@ -11,8 +11,8 @@ object BinaryParser {
 	def anyOf(s:ByteString):BinaryParser[Byte]				= Parser inSet		s.toSet				named s"any byte in ${s.toString}"
 	def noneOf(s:ByteString):BinaryParser[Byte]				= Parser notInSet	s.toSet				named s"any byte except bytes in ${s.toString}"
 
-	def anyIn(from:Byte, to:Byte):BinaryParser[Byte]		= Parser inRange	(from, to)			named s"any byte between ${from.toString} and ${to.toString}"
-	def noneIn(from:Byte, to:Byte):BinaryParser[Byte]		= Parser notInRange	(from, to)			named s"any byte between except bytes between ${from.toString} and ${to.toString}"
+	def anyIn(from:Byte, to:Byte):BinaryParser[Byte]		= Parser.inRange	(from, to)			named s"any byte between ${from.toString} and ${to.toString}"
+	def noneIn(from:Byte, to:Byte):BinaryParser[Byte]		= Parser.notInRange	(from, to)			named s"any byte between except bytes between ${from.toString} and ${to.toString}"
 
 	def take(count:Int):BinaryParser[Seq[Byte]]				= Parser take	count					named s"any ${count.toString} bytes"
 	def takeByteString(count:Int):BinaryParser[ByteString]	= take(count).stringify

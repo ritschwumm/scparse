@@ -33,7 +33,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 
 	// base case
 	def any[C]:Parser[C,C]	=
-		_ cata (
+		_.cata(
 			zeroM,
 			(x,y) => unitM((x,y))
 		)
@@ -275,7 +275,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 			while (true) {
 				if (i == count)	return unitM((in, out.toVector))
 				val exit	=
-					in cata (
+					in.cata(
 						true,
 						(more,item)	=> { out += item; in = more; i += 1; false }
 					)
@@ -293,7 +293,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 			var in	= s
 			while (true) {
 				val exit	=
-					in cata (
+					in.cata(
 						true,
 						(more,item)	=> { out += item; in = more; false }
 					)
@@ -406,13 +406,13 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 
 		def parse(s:Source[C]):Result[C,T]
 
-		def map[U](func:T=>U):Parser[C,U]	= outer map		(this, func)
-		def tag[U](value: =>U):Parser[C,U]	= outer tag		(this, value)
-		def void:Parser[C,Unit]				= outer tag		(this, ())
+		def map[U](func:T=>U):Parser[C,U]	= outer.map(this, func)
+		def tag[U](value: =>U):Parser[C,U]	= outer.tag(this, value)
+		def void:Parser[C,Unit]				= outer.tag(this, ())
 
-		def flatMap[U](func:T=>Parser[C,U]):Parser[C,U]	= outer flatMap	(this, func)
+		def flatMap[U](func:T=>Parser[C,U]):Parser[C,U]	= outer.flatMap(this, func)
 
-		def filter(func:T=>Boolean):Parser[C,T]		= outer filter	(this, func)
+		def filter(func:T=>Boolean):Parser[C,T]		= outer.filter(this, func)
 		def withFilter(predicate:T=>Boolean)	= new GenWithFilter[T](this, predicate)
 		class GenWithFilter[+A](self:Parser[C,A], predicate:A=>Boolean) {
 			def map[B](func:A=>B):Parser[C,B]					= self filter predicate map		func
@@ -421,25 +421,25 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		}
 
 		// TODO orElse?
-		def alternate[U>:T](that: =>Parser[C,U]):Parser[C,U]	= outer alternate	(this, that)
+		def alternate[U>:T](that: =>Parser[C,U]):Parser[C,U]	= outer .alternate		(this, that)
 		// TODO orElse?
-		def prefer  [U>:T](that: =>Parser[C,U]):Parser[C,U]		= outer prefer		(this, that)
+		def prefer  [U>:T](that: =>Parser[C,U]):Parser[C,U]		= outer .prefer			(this, that)
 
-		def collect [U](func:PartialFunction[T,U]):Parser[C,U]	= outer collect		(this, func)
-		def collapseMap[U](func:T=>Option[U]):Parser[C,U]		= outer collapseMap	(this, func)
-		def ap[U](that: =>Parser[C,T=>U]):Parser[C,U]			= outer applicate	(that, this)
+		def collect [U](func:PartialFunction[T,U]):Parser[C,U]	= outer .collect		(this, func)
+		def collapseMap[U](func:T=>Option[U]):Parser[C,U]		= outer .collapseMap	(this, func)
+		def ap[U](that: =>Parser[C,T=>U]):Parser[C,U]			= outer .applicate		(that, this)
 		def pa[U,V](that: =>Parser[C,U])
-				(implicit witness:T<:<(U=>V)):Parser[C,V]		= outer applicate	(outer map (this, witness), that)
+				(implicit witness:T<:<(U=>V)):Parser[C,V]		= outer .applicate	(outer.map(this, witness), that)
 
-		def next [U](that: =>Parser[C,U]):Parser[C,(T,U)]		= outer next		(this, that)
-		def left[U](that: =>Parser[C,U]):Parser[C,T] 			= outer left		(this, that)
-		def right[U](that: =>Parser[C,U]):Parser[C,U]			= outer right		(this, that)
+		def next [U](that: =>Parser[C,U]):Parser[C,(T,U)]		= outer .next		(this, that)
+		def left[U](that: =>Parser[C,U]):Parser[C,T] 			= outer .left		(this, that)
+		def right[U](that: =>Parser[C,U]):Parser[C,U]			= outer .right		(this, that)
 
 		def cons[TT>:T](that: =>Parser[C,List[TT]]):Parser[C,List[TT]]	=
-			outer cons		(this, that)
+			outer .cons		(this, that)
 
 		def conses[U>:T](that: =>Parser[C,List[U]])(implicit witness:T<:<List[U]):Parser[C,List[U]]	=
-			outer conses	(outer map (this, witness), that)
+			outer .conses	(outer.map(this, witness), that)
 
 		def not :Parser[C,Unit]			= outer not		(this)
 
@@ -447,12 +447,12 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		def repeat :Parser[C,List[T]]	= outer repeat	(this)
 		def repeat1 :Parser[C,List[T]]	= outer repeat1	(this)
 
-		def repeatN(count:Int):Parser[C,List[T]]							= outer repeatN	(this, count)
-		def repeatSeparated[U](separator: =>Parser[C,U]):Parser[C,List[T]]	= outer repeatSeparated		(this, separator)
-		def repeatSeparated1[U](separator: =>Parser[C,U]):Parser[C,List[T]]	= outer repeatSeparated1	(this, separator)
+		def repeatN(count:Int):Parser[C,List[T]]							= outer .repeatN	(this, count)
+		def repeatSeparated[U](separator: =>Parser[C,U]):Parser[C,List[T]]	= outer .repeatSeparated		(this, separator)
+		def repeatSeparated1[U](separator: =>Parser[C,U]):Parser[C,List[T]]	= outer .repeatSeparated1	(this, separator)
 
-		def chainLeft[U>:T](operator: =>Parser[C,(U,U)=>U]):Parser[C,U]		= outer chainLeft			(this, operator)
-		def chainRight[U>:T](operator: =>Parser[C,(U,U)=>U]):Parser[C,U]	= outer chainRight			(this, operator)
+		def chainLeft[U>:T](operator: =>Parser[C,(U,U)=>U]):Parser[C,U]		= outer .chainLeft			(this, operator)
+		def chainRight[U>:T](operator: =>Parser[C,(U,U)=>U]):Parser[C,U]	= outer .chainRight			(this, operator)
 
 		def phrase :Parser[C,T]											= outer phrase	(this)
 
