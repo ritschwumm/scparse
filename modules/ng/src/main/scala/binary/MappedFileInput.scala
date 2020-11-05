@@ -5,7 +5,7 @@ import java.io.RandomAccessFile
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 
-import scutil.base.implicits._
+import scutil.core.implicits._
 
 import scparse.ng._
 

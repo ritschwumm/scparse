@@ -1,6 +1,6 @@
 package scparse.ng
 
-import scutil.base.implicits._
+import scutil.core.implicits._
 import scutil.lang._
 
 object ParserResult {

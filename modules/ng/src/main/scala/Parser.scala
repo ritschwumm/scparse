@@ -4,7 +4,7 @@ import scala.annotation.tailrec
 import scala.collection.IterableFactory
 import scala.collection.mutable
 
-import scutil.base.implicits._
+import scutil.core.implicits._
 import scutil.lang._
 import scutil.lang.tc._
 

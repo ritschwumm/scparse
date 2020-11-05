@@ -1,6 +1,6 @@
 package scparse.oldschool
 
-import scutil.base.implicits._
+import scutil.core.implicits._
 
 object Base {
 	/** PEG-style always taking the longes alternative on repetitions */

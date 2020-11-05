@@ -1,6 +1,6 @@
 package scparse.ng.text
 
-import scutil.base.implicits._
+import scutil.core.implicits._
 
 import scparse.ng.text.CharParser._
 
