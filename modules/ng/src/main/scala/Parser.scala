@@ -225,17 +225,25 @@ abstract class Parser[S,+T] { self =>
 	def pa[U](that:Parser[S,T=>U]):Parser[S,U]	=
 		for { a	<- self; b	<- that } yield b(a)
 
+	@deprecated("use tuple", "0.193.0")
 	def zip[U](that:Parser[S,U]):Parser[S,(T,U)]	=
+		tuple(that)
+
+	def tuple[U](that:Parser[S,U]):Parser[S,(T,U)]	=
 		for { a	<- self; b	<- that } yield (a, b)
 
+	@deprecated("use map2", "0.193.0")
 	def zipWith[U,V](that:Parser[S,U])(combine:(T,U)=>V):Parser[S,V]	=
+		map2(that)(combine)
+
+	def map2[U,V](that:Parser[S,U])(combine:(T,U)=>V):Parser[S,V]	=
 		for { a	<- self; b	<- that } yield combine(a, b)
 
 	def next[U](that:Parser[S,U]):Parser[S,(T,U)]	=
-		this zip that
+		this tuple that
 
 	def nextWith[U,V](that:Parser[S,U])(combine:(T,U)=>V):Parser[S,V]	=
-		this.zipWith(that)(combine)
+		this.map2(that)(combine)
 
 	def tag[U](it:U):Parser[S,U]	=
 		self map constant(it)
