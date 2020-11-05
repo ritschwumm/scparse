@@ -2,7 +2,7 @@ import sbtcrossproject.{ CrossProject, CrossType, Platform }
 
 inThisBuild(Seq(
 	organization	:= "de.djini",
-	version			:= "0.190.0",
+	version			:= "0.191.0",
 
 	scalaVersion	:= "2.13.3",
 	scalacOptions	++= Seq(
@@ -84,7 +84,7 @@ lazy val `scparse-oldschool`	=
 	.dependsOn()
 	.settings(
 		libraryDependencies	++= Seq(
-			"de.djini"		%% "scutil-jdk"	% "0.184.0"	% "compile",
+			"de.djini"		%% "scutil-jdk"	% "0.185.0"	% "compile",
 			"org.specs2"	%% "specs2-core"	% "4.10.5"	% "test"
 		),
 	)
@@ -96,7 +96,7 @@ lazy val `scparse-ng`	=
 	//.dependsOn()
 	.settings(
 		libraryDependencies	++= Seq(
-			"de.djini"		%%% "scutil-base"	% "0.184.0"	% "compile",
+			"de.djini"		%%% "scutil-base"	% "0.185.0"	% "compile",
 		),
 	)
 	.jvmSettings()
