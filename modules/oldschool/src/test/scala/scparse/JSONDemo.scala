@@ -67,14 +67,14 @@ object JSONDemo {
 
 			def exp:StringParser[Int]	= {
 				def ok:StringParser[Int]	= success(0)
-				(anyInclude('e', 'E') right signBI pa natural map { _.toInt }) alternate ok
+				(anyInclude('e', 'E') right signBI ap natural map { _.toInt }) alternate ok
 			}
 
 			def signLess:StringParser[BigDecimal]	= (body next frac next exp) map { case ((b, (fb, fe)), e)	=>
 				BigDecimal(b, -e) + BigDecimal(fb, fe-e)
 			}
 
-			signBD pa signLess
+			signBD ap signLess
 		}
 	}
 }

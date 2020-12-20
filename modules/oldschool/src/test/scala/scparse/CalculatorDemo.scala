@@ -23,7 +23,7 @@ object CalculatorDemo {
 		def div		= binary[BigInt]("/")(_/_)
 		def exp		= binary[BigInt]("^")(_ pow _.toInt)
 
-		def number		= sign pa token(natural)
+		def number		= sign ap token(natural)
 		def sign		= signPlus alternate signMinus alternate signNone
 		def signPlus	= unary[BigInt]("+")(identity)
 		def signMinus	= unary[BigInt]("-")(-_)

@@ -427,8 +427,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 
 		def collect [U](func:PartialFunction[T,U]):Parser[C,U]	= outer .collect		(this, func)
 		def collapseMap[U](func:T=>Option[U]):Parser[C,U]		= outer .collapseMap	(this, func)
-		def ap[U](that: =>Parser[C,T=>U]):Parser[C,U]			= outer .applicate		(that, this)
-		def pa[U,V](that: =>Parser[C,U])
+		def ap[U,V](that: =>Parser[C,U])
 				(implicit witness:T<:<(U=>V)):Parser[C,V]		= outer .applicate	(outer.map(this, witness), that)
 
 		def next [U](that: =>Parser[C,U]):Parser[C,(T,U)]		= outer .next		(this, that)

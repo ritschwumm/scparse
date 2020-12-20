@@ -141,7 +141,7 @@ object Parser {
 	implicit def ParserApplicative[S]:Applicative[Parser[S,*]]	=
 		new Applicative[Parser[S,*]] {
 			override def pure[T](it:T):Parser[S,T]											= Parser success it
-			override def ap[T1,T2](its:Parser[S,T1])(func:Parser[S,T1=>T2]):Parser[S,T2]	= its pa func
+			override def ap[T1,T2](func:Parser[S,T1=>T2])(its:Parser[S,T1]):Parser[S,T2]	= func ap its
 		}
 }
 
@@ -217,13 +217,8 @@ abstract class Parser[S,+T] { self =>
 	def flatten[U](implicit ev:T=>Parser[S,U]):Parser[S,U]	=
 		self flatMap ev
 
-	// function effect first
 	def ap[U,V](that:Parser[S,U])(implicit ev:T=>(U=>V)):Parser[S,V]	=
 		for { a	<- self; b	<- that } yield a(b)
-
-	// parse effect first (!)
-	def pa[U](that:Parser[S,T=>U]):Parser[S,U]	=
-		for { a	<- self; b	<- that } yield b(a)
 
 	@deprecated("use tuple", "0.193.0")
 	def zip[U](that:Parser[S,U]):Parser[S,(T,U)]	=
