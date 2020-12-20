@@ -4,7 +4,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 inThisBuild(Seq(
 	organization	:= "de.djini",
-	version			:= "0.197.0",
+	version			:= "0.198.0",
 
 	scalaVersion	:= "2.13.4",
 	scalacOptions	++= Seq(
@@ -86,7 +86,7 @@ lazy val `scparse-oldschool`	=
 	.dependsOn()
 	.settings(
 		libraryDependencies	++= Seq(
-			"de.djini"		%% "scutil-jdk"	% "0.191.0"	% "compile",
+			"de.djini"		%% "scutil-jdk"	% "0.192.0"	% "compile",
 			"io.monix"		%%	"minitest"	% "2.9.1"	% "test"
 		),
 		testFrameworks	+= new TestFramework("minitest.runner.Framework")
@@ -95,12 +95,14 @@ lazy val `scparse-oldschool`	=
 lazy val `scparse-ng`	=
 	myCrossProject("scparse-ng", file("modules/ng"), CrossType.Pure)
 	.enablePlugins()
-	// TODO this crashes the build with "no suck key exception" on JVMPlatform and/or JSPlatform - why?
+	// TODO this crashes the build with "no such key exception" on JVMPlatform and/or JSPlatform - why?
 	//.dependsOn()
 	.settings(
 		libraryDependencies	++= Seq(
-			"de.djini"		%%% "scutil-core"	% "0.191.0"	% "compile",
+			"de.djini"		%%% "scutil-core"	% "0.192.0"	% "compile",
+			"io.monix"		%%	"minitest"		% "2.9.1"	% "test"
 		),
+		testFrameworks	+= new TestFramework("minitest.runner.Framework")
 	)
 	.jvmSettings()
 	.jsSettings(
@@ -108,5 +110,4 @@ lazy val `scparse-ng`	=
 	)
 lazy val `scparse-ng-jvm`	= `scparse-ng`.jvm
 lazy val `scparse-ng-js`	= `scparse-ng`.js
-
 
