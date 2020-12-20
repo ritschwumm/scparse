@@ -1,8 +1,10 @@
 import sbtcrossproject.{ CrossProject, CrossType, Platform }
 
+Global / onChangedBuildSource := ReloadOnSourceChanges
+
 inThisBuild(Seq(
 	organization	:= "de.djini",
-	version			:= "0.196.0",
+	version			:= "0.197.0",
 
 	scalaVersion	:= "2.13.4",
 	scalacOptions	++= Seq(
@@ -14,7 +16,7 @@ inThisBuild(Seq(
 	),
 
 	conflictManager		:= ConflictManager.strict withOrganization "^(?!(org\\.scala-lang|org\\.scala-js)(\\..*)?)$",
-	addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.1" cross CrossVersion.full),
+	addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.2" cross CrossVersion.full),
 
 	wartremoverErrors ++= Seq(
 		Wart.AsInstanceOf,
@@ -84,9 +86,10 @@ lazy val `scparse-oldschool`	=
 	.dependsOn()
 	.settings(
 		libraryDependencies	++= Seq(
-			"de.djini"		%% "scutil-jdk"	% "0.190.0"	% "compile",
-			"org.specs2"	%% "specs2-core"	% "4.10.5"	% "test"
+			"de.djini"		%% "scutil-jdk"	% "0.191.0"	% "compile",
+			"io.monix"		%%	"minitest"	% "2.9.1"	% "test"
 		),
+		testFrameworks	+= new TestFramework("minitest.runner.Framework")
 	)
 
 lazy val `scparse-ng`	=
@@ -96,7 +99,7 @@ lazy val `scparse-ng`	=
 	//.dependsOn()
 	.settings(
 		libraryDependencies	++= Seq(
-			"de.djini"		%%% "scutil-core"	% "0.190.0"	% "compile",
+			"de.djini"		%%% "scutil-core"	% "0.191.0"	% "compile",
 		),
 	)
 	.jvmSettings()
