@@ -220,35 +220,35 @@ abstract class Parser[S,+T] { self =>
 	def ap[U,V](that:Parser[S,U])(implicit ev:T=>(U=>V)):Parser[S,V]	=
 		for { a	<- self; b	<- that } yield a(b)
 
-	@deprecated("use tuple", "0.193.0")
-	def zip[U](that:Parser[S,U]):Parser[S,(T,U)]	=
-		tuple(that)
-
+	@deprecated("use product", "0.201.0")
 	def tuple[U](that:Parser[S,U]):Parser[S,(T,U)]	=
-		for { a	<- self; b	<- that } yield (a, b)
+		product(that)
 
-	@deprecated("use map2", "0.193.0")
-	def zipWith[U,V](that:Parser[S,U])(combine:(T,U)=>V):Parser[S,V]	=
-		map2(that)(combine)
+	def product[U](that:Parser[S,U]):Parser[S,(T,U)]	=
+		for { a	<- self; b	<- that } yield (a, b)
 
 	def map2[U,V](that:Parser[S,U])(combine:(T,U)=>V):Parser[S,V]	=
 		for { a	<- self; b	<- that } yield combine(a, b)
 
 	def next[U](that:Parser[S,U]):Parser[S,(T,U)]	=
-		this tuple that
+		this product that
 
+	//@deprecated("use map2", "xxx")
 	def nextWith[U,V](that:Parser[S,U])(combine:(T,U)=>V):Parser[S,V]	=
 		this.map2(that)(combine)
 
+	///@deprecated("use as", "xxx")
 	def tag[U](it:U):Parser[S,U]	=
 		self map constant(it)
 
 	def void:Parser[S,Unit]	=
 		self tag (())
 
+	///@deprecated("use productL", "xxx")
 	def left(that:Parser[S,Any]):Parser[S,T]	=
 		self next that map { _._1 }
 
+	///@deprecated("use productR", "xxx")
 	def right[U](that:Parser[S,U]):Parser[S,U]	=
 		self next that map { _._2 }
 
