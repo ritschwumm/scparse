@@ -305,13 +305,17 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	}
 
 	/** parse into a source, then parse inside that source */
-	def inside[C,D,DS,T](a: =>Parser[C,DS], b: =>Parser[D,T])(implicit ev:DS=>Source[D]):Parser[C,T] = {
+	def inside[C,D,DS,T](a: =>Parser[C,DS], b: =>Parser[D,T])(implicit ev:DS <:< Source[D]):Parser[C,T] =
+		nest(ev, a, b)
+
+	/** parse into a source, then parse inside that source */
+	def nest[C,D,DS,T](mkSource:DS=>Source[D], a: =>Parser[C,DS], b: =>Parser[D,T]):Parser[C,T] = {
 		def impl(sc:Source[C]):Result[C,T]	= {
 			val aRef	= a
 			val bRef	= b
 			val dss:Result[C,DS]	= aRef parse sc
 			val ts:Result[C,T]		= flatMapM(dss, (it:Item[C,DS]) => {
-				mapM(bRef parse it._2, { (jt:Item[D,T])	=>
+				mapM(bRef parse mkSource(it._2), { (jt:Item[D,T])	=>
 					(it._1, jt._2)
 				})
 			})
@@ -428,7 +432,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		def collect [U](func:PartialFunction[T,U]):Parser[C,U]	= outer .collect		(this, func)
 		def collapseMap[U](func:T=>Option[U]):Parser[C,U]		= outer .collapseMap	(this, func)
 		def ap[U,V](that: =>Parser[C,U])
-				(implicit witness:T<:<(U=>V)):Parser[C,V]		= outer .applicate	(outer.map(this, witness), that)
+				(implicit witness:T <:< (U=>V)):Parser[C,V]		= outer .applicate	(outer.map(this, witness), that)
 
 		def next [U](that: =>Parser[C,U]):Parser[C,(T,U)]		= outer .next		(this, that)
 		def left[U](that: =>Parser[C,U]):Parser[C,T] 			= outer .left		(this, that)
@@ -456,9 +460,9 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		def phrase :Parser[C,T]											= outer phrase	(this)
 
 		def nest[D,U](mkSource:T=>Source[D], inner:Parser[D,U]):Parser[C,U]	=
-			outer.inside(this, inner)(mkSource)
+			outer.nest(mkSource, this, inner)
 
-		//def inside[C,D,DS,T](a: =>Parser[C,DS], b: =>Parser[D,T])(implicit ev:DS=>Source[D]):Parser[C,T] = {
+		//def inside[C,D,DS,T](a: =>Parser[C,DS], b: =>Parser[D,T])(implicit ev:DS <:< Source[D]):Parser[C,T] = {
 
 		/*
 		//## dsl
@@ -472,7 +476,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		def ^^?[U](func:T=>Option[U]):Parser[C,U]					= outer filterMap	(this, func)
 		def ==>[U](func:T=>Parser[C,U]):Parser[C,U]					= outer flatMap		(this, func)
 		def <*>[U,V](that: =>Parser[C,U])
-				(implicit witness:T<:<(U=>V)):Parser[C,V]			= outer applicate	(outer map (this, witness), that)
+				(implicit witness:T <:< (U=>V)):Parser[C,V]			= outer applicate	(outer map (this, witness), that)
 		def <**>[U](that: =>Parser[C,T=>U]):Parser[C,U]				= outer applicate	(that, this)
 
 		def ~ [U](that: =>Parser[C,U]):Parser[C,(T,U)]				= outer next	(this, that)
