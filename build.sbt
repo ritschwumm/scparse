@@ -4,7 +4,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 inThisBuild(Seq(
 	organization	:= "de.djini",
-	version			:= "0.212.0",
+	version			:= "0.213.0",
 
 	scalaVersion	:= "2.13.6",
 	scalacOptions	++= Seq(
@@ -13,12 +13,13 @@ inThisBuild(Seq(
 		"-unchecked",
 		"-Werror",
 		"-Xlint",
+		"-Xsource:3",
 	),
 
 	versionScheme	:= Some("early-semver"),
 	conflictManager	:= ConflictManager.strict withOrganization "^(?!(org\\.scala-lang|org\\.scala-js)(\\..*)?)$",
 
-	addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full),
+	addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
 
 	wartremoverErrors ++= Seq(
 		Wart.AsInstanceOf,
@@ -88,7 +89,7 @@ lazy val `scparse-oldschool`	=
 	.dependsOn()
 	.settings(
 		libraryDependencies	++= Seq(
-			"de.djini"		%%	"scutil-jdk"	% "0.206.0"	% "compile",
+			"de.djini"		%%	"scutil-jdk"	% "0.207.0"	% "compile",
 			"io.monix"		%%	"minitest"		% "2.9.6"	% "test"
 		),
 		testFrameworks	+= new TestFramework("minitest.runner.Framework")
@@ -101,7 +102,7 @@ lazy val `scparse-ng`	=
 	//.dependsOn()
 	.settings(
 		libraryDependencies	++= Seq(
-			"de.djini"		%%% "scutil-core"	% "0.206.0"	% "compile",
+			"de.djini"		%%% "scutil-core"	% "0.207.0"	% "compile",
 			"io.monix"		%%	"minitest"		% "2.9.6"	% "test"
 		),
 		testFrameworks	+= new TestFramework("minitest.runner.Framework")
