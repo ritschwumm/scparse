@@ -1,10 +1,10 @@
 package scparse.oldschool
 
-import scutil.core.implicits._
+import scutil.core.implicits.*
 
 object Base {
 	/** PEG-style always taking the longes alternative on repetitions */
-	implicit object OptionBase extends Base[Option] {
+	given Base[Option] with {
 		type M[+X]	= Option[X]
 
 		def zeroM[T]:M[T]									= None
@@ -24,7 +24,7 @@ object Base {
 	}
 
 	/** general style returning all possible parses */
-	implicit object ListBase extends Base[List] {
+	given Base[List] with {
 		type M[+X]	= List[X]
 
 		def zeroM[T]:M[T]									= List.empty
@@ -44,7 +44,7 @@ object Base {
 	}
 
 	/** general style returning all possible parses */
-	implicit object VectorBase extends Base[Vector] {
+	given Base[Vector] with {
 		type M[+X]	= Vector[X]
 
 		def zeroM[T]:M[T]									= Vector.empty

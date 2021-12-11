@@ -1,6 +1,6 @@
 package scparse.ng.text
 
-import scparse.ng._
+import scparse.ng.*
 
 // TODO quote
 object TextParser {

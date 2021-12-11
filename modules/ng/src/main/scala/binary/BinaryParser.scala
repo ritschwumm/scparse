@@ -1,8 +1,8 @@
 package scparse.ng.binary
 
-import scutil.lang._
+import scutil.lang.*
 
-import scparse.ng._
+import scparse.ng.*
 
 // TODO quote
 object BinaryParser {

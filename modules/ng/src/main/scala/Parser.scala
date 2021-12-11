@@ -4,11 +4,11 @@ import scala.annotation.tailrec
 import scala.collection.IterableFactory
 import scala.collection.mutable
 
-import scutil.core.implicits._
-import scutil.lang._
-import scutil.lang.tc._
+import scutil.core.implicits.*
+import scutil.lang.*
+import scutil.lang.tc.*
 
-import scparse.ng.ParserResult._
+import scparse.ng.ParserResult.*
 
 object Parser {
 	/** this is useful when building a recursive parser */

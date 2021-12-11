@@ -1,6 +1,6 @@
 package scparse.oldschool.demo
 
-import scparse.oldschool._
+import scparse.oldschool.*
 
 object JSONDemo {
 	def main(args:Array[String]):Unit	= {

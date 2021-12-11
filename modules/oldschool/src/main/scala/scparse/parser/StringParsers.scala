@@ -20,8 +20,8 @@ trait StringParsers[M[+_]] { self:Parsers[M] =>
 	//------------------------------------------------------------------------------
 
 	def anyBetween(from:Char, to:Char):StringParser[Char]	= self.any collect { case c if c >= from && c <= to => c }
-	def anyCharsInclude(chars:String):StringParser[Char]	= self.anyInclude(chars:_*)
-	def anyCharsExclude(chars:String):StringParser[Char]	= self.anyExclude(chars:_*)
+	def anyCharsInclude(chars:String):StringParser[Char]	= self.anyInclude(chars*)
+	def anyCharsExclude(chars:String):StringParser[Char]	= self.anyExclude(chars*)
 
 	lazy val digit:StringParser[Char]	= self satisfy (_.isDigit)
 	lazy val letter:StringParser[Char]	= self satisfy (_.isLetter)

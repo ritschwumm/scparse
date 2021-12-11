@@ -5,7 +5,7 @@ import java.io.RandomAccessFile
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 
-import scutil.core.implicits._
+import scutil.core.implicits.*
 
 object MappedFileSource {
 	def of(file:File):MappedFileSource	= {

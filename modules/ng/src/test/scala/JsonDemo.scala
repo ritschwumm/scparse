@@ -1,7 +1,7 @@
 package scparse.ng.demo
 
-import scparse.ng._
-import scparse.ng.text._
+import scparse.ng.*
+import scparse.ng.text.*
 
 object JsonDemo {
 	def main(args:Array[String]):Unit	= {

@@ -1,6 +1,6 @@
 package scparse.oldschool
 
-import scutil.lang.implicits._
+import scutil.lang.implicits.*
 
 object StringSource {
 	def of(input:String):StringSource	= StringSource(input, 0)

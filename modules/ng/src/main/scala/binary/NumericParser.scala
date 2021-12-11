@@ -1,6 +1,6 @@
 package scparse.ng.binary
 
-import scutil.lang._
+import scutil.lang.*
 
 object NumericParser {
 	val int8:BinaryParser[Byte]			= number("int8",		1, _.toByte)

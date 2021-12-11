@@ -1,8 +1,8 @@
 package scparse.ng.binary
 
-import scutil.lang._
+import scutil.lang.*
 
-import scparse.ng._
+import scparse.ng.*
 
 object ByteStringInput {
 	def of(s:ByteString):ParserInput[Byte]	= ByteStringInput(s, 0)

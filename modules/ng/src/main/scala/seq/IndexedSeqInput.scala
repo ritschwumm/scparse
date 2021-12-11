@@ -1,6 +1,6 @@
 package scparse.ng.seq
 
-import scparse.ng._
+import scparse.ng.*
 
 object IndexedSeqInput {
 	def of[T](s:IndexedSeq[T]):ParserInput[T]	= IndexedSeqInput(s, 0)

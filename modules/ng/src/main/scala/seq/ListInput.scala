@@ -1,6 +1,6 @@
 package scparse.ng.seq
 
-import scparse.ng._
+import scparse.ng.*
 
 object ListInput {
 	def of[T](s:List[T]):ParserInput[T]	= ListInput(s, 0)

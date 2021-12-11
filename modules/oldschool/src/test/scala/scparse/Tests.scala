@@ -1,6 +1,6 @@
 package scparse.oldschool.demo
 
-import minitest._
+import minitest.*
 
 object Tests extends SimpleTestSuite {
 	test("calculator demoshould just work") {

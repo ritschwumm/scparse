@@ -5,9 +5,9 @@ import java.io.RandomAccessFile
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 
-import scutil.core.implicits._
+import scutil.core.implicits.*
 
-import scparse.ng._
+import scparse.ng.*
 
 object MappedFileInput {
 	def of(file:File):ParserInput[Byte]	= {

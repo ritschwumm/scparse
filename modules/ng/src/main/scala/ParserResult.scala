@@ -1,7 +1,7 @@
 package scparse.ng
 
-import scutil.core.implicits._
-import scutil.lang._
+import scutil.core.implicits.*
+import scutil.lang.*
 
 object ParserResult {
 	def AnonFailure[S](index:Int):ParserResult[S,Nothing]				= Failure(index, List.empty)

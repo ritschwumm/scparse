@@ -3,10 +3,10 @@ package scparse.oldschool
 import scala.language.implicitConversions
 import scala.collection.mutable
 
-import scutil.lang._
+import scutil.lang.*
 
 class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
-	import base._
+	import base.*
 
 	type Result[+C,+T]		= M[Item[C,T]]
 	type Item[+C,+T]		= (Source[C],T)

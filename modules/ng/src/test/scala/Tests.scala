@@ -1,9 +1,9 @@
 package scparse.ng.demo
 
-import minitest._
+import minitest.*
 
-//import scparse.ng._
-import scparse.ng.text._
+//import scparse.ng.*
+import scparse.ng.text.*
 
 object Tests extends SimpleTestSuite {
 	test("calculator demo should just work") {

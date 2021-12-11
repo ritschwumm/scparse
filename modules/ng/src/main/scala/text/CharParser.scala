@@ -1,6 +1,6 @@
 package scparse.ng.text
 
-import scparse.ng._
+import scparse.ng.*
 
 object CharParser {
 	val digit:TextParser[Char]		= Parser.satisfy[Char] (_.isDigit)		named "digit"

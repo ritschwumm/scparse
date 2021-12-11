@@ -1,8 +1,8 @@
 package scparse.ng.text
 
-import scutil.core.implicits._
+import scutil.core.implicits.*
 
-import scparse.ng.text.CharParser._
+import scparse.ng.text.CharParser.*
 
 object TokenParser {
 	val Standard	= new TokenParser(white.vector)

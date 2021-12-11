@@ -1,6 +1,6 @@
 package scparse.ng.text
 
-import scparse.ng._
+import scparse.ng.*
 
 object StringInput {
 	def of(s:String):ParserInput[Char]	= StringInput(s, 0)

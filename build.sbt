@@ -4,7 +4,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 inThisBuild(Seq(
 	organization	:= "de.djini",
-	version			:= "0.224.0",
+	version			:= "0.225.0",
 
 	scalaVersion	:= "3.1.0",
 	scalacOptions	++= Seq(
@@ -87,7 +87,7 @@ lazy val `scparse-oldschool`	=
 	.dependsOn()
 	.settings(
 		libraryDependencies	++= Seq(
-			"de.djini"		%%	"scutil-jdk"	% "0.217.0"	% "compile",
+			"de.djini"		%%	"scutil-jdk"	% "0.218.0"	% "compile",
 			"io.monix"		%%	"minitest"		% "2.9.6"	% "test"
 		),
 		testFrameworks	+= new TestFramework("minitest.runner.Framework")
@@ -100,7 +100,7 @@ lazy val `scparse-ng`	=
 	//.dependsOn()
 	.settings(
 		libraryDependencies	++= Seq(
-			"de.djini"		%%% "scutil-core"	% "0.217.0"	% "compile",
+			"de.djini"		%%% "scutil-core"	% "0.218.0"	% "compile",
 			"io.monix"		%%	"minitest"		% "2.9.6"	% "test"
 		),
 		testFrameworks	+= new TestFramework("minitest.runner.Framework")
