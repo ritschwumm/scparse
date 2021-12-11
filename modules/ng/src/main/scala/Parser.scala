@@ -462,10 +462,11 @@ abstract class Parser[S,+T] { self =>
 
 	//------------------------------------------------------------------------------
 
-	def withFilter(predicate:T=>Boolean)	= new GenWithFilter(this, predicate)
-	class GenWithFilter(peer:Parser[S,T], predicate:T=>Boolean) {
-		def map[U](func:T=>U):Parser[S,U]					= peer filter predicate map func
-		def flatMap[U](func:T=>Parser[S,U]):Parser[S,U]		= peer filter predicate flatMap	func
-		def withFilter(further:T=>Boolean):GenWithFilter	= new GenWithFilter(peer, x => predicate(x) && further(x))
+	def withFilter[TT>:T](predicate:TT=>Boolean)	= new GenWithFilter[TT](this, predicate)
+
+	class GenWithFilter[TT>:T](peer:Parser[S,TT], predicate:TT=>Boolean) {
+		def map[U](func:TT=>U):Parser[S,U]						= peer filter predicate map func
+		def flatMap[U](func:TT=>Parser[S,U]):Parser[S,U]		= peer filter predicate flatMap	func
+		def withFilter(further:TT=>Boolean):GenWithFilter[TT]	= new GenWithFilter(peer, x => predicate(x) && further(x))
 	}
 }

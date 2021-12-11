@@ -100,7 +100,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 				(rf:Item[C,S=>T]) => {
 					mapM(
 						value parse rf._1,
-						{ st:Item[C,S] => (st._1, rf._2(st._2)) }
+						(st:Item[C,S]) => (st._1, rf._2(st._2))
 					)
 				}
 			)
@@ -149,29 +149,29 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	def next[C,T,U](first: =>Parser[C,T], second: =>Parser[C,U]):Parser[C,(T,U)]	=
 		// for { p1 <- parser1; p2 <- parser2 } yield Pair(p1, p2)
 		// applicate(applicate(success((t:T) => (u:U) => Pair(t,u)), parser1), parser2)
-		flatMap(first, { value1:T =>
-			map(second, { value2:U =>
-				  (value1, value2)
-			})
-		})
+		flatMap(first, (value1:T) =>
+			map(second, (value2:U) =>
+			  (value1, value2)
+			)
+		)
 
 	/** sequences a normal and a List parser producing a List */
 	def cons[C,T,U>:T](first: =>Parser[C,T], second: =>Parser[C,List[U]]):Parser[C,List[U]]	=
 		// for { p1 <- parser1; p2 <- parser2 } yield p1 :: p2
 		// applicate(applicate(success((t:T) => (uu:List[U]) => t :: uu), parser1), parser2)
-		flatMap(first, { value1:T =>
-			map(second, { value2:List[U] =>
+		flatMap(first, (value1:T) =>
+			map(second, (value2:List[U]) =>
 				value1 :: value2
-			})
-		})
+			)
+		)
 
 	/** sequences two List parsers into a single List parser */
 	def conses[C,T,U>:T](first: =>Parser[C,List[T]], second: =>Parser[C,List[U]]):Parser[C,List[U]]	=
-		flatMap(first, { value1:List[T] =>
-			map(second, { value2:List[U] =>
+		flatMap(first, (value1:List[T]) =>
+			map(second, (value2:List[U]) =>
 				value1 ::: value2
-			})
-		})
+			)
+		)
 
 	/** optional */
 	def option[C,T](sub: =>Parser[C,T]):Parser[C,Option[T]]	=
@@ -207,11 +207,11 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	def chainLeft[C,T,U>:T](value: =>Parser[C,T], operator: =>Parser[C,(U,U)=>U]):Parser[C,U]	= {
 		def rest(value1:U):Parser[C,U]	= {
 			alternate(
-				flatMap(operator, { valueOp:((U,U)=>U) =>
-					flatMap(value, { value2:T =>
+				flatMap(operator, (valueOp:((U,U)=>U)) =>
+					flatMap(value, (value2:T) =>
 						rest(valueOp(value1,value2))
-					})
-				}),
+					)
+				),
 				success(value1)
 			)
 		}
@@ -219,16 +219,16 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	}
 
 	def chainRight[C,T,U>:T](value: =>Parser[C,T], operator: =>Parser[C,(U,U)=>U]):Parser[C,U]	= {
-		flatMap(value, { value1:T =>
+		flatMap(value, (value1:T) =>
 			alternate(
-				flatMap(operator, { valueOp:((U,U)=>U) =>
-					map(chainRight(value, operator), { value2:U =>
+				flatMap(operator, (valueOp:((U,U)=>U)) =>
+					map(chainRight(value, operator), (value2:U) =>
 						valueOp(value1, value2)
-					})
-				}),
+					)
+				),
 				success(value1)
 			)
-		})
+		)
 	}
 
 	//------------------------------------------------------------------------------
@@ -297,7 +297,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 						true,
 						(more,item)	=> { out += item; in = more; false }
 					)
-					if (exit)	return unitM((in, out.toVector))
+				if (exit)	return unitM((in, out.toVector))
 			}
 			nothing
 		}
