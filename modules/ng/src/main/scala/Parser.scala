@@ -170,9 +170,9 @@ abstract class Parser[S,+T] { self =>
 			}
 		}
 
-	def collapse[U](implicit ev:T <:< Option[U]):Parser[S,U]	= self collapseMap ev
+	def collapse[U](using ev:T <:< Option[U]):Parser[S,U]	= self collapseMap ev
 
-	def collapseNamed[U](name:String)(implicit ev:T <:< Option[U]):Parser[S,U]	=
+	def collapseNamed[U](name:String)(using ev:T <:< Option[U]):Parser[S,U]	=
 		self.collapse named name
 
 	def collect[U](func:PartialFunction[T,U]):Parser[S,U]	= self collapseMap func.lift
@@ -214,10 +214,10 @@ abstract class Parser[S,+T] { self =>
 			}
 		}
 
-	def flatten[U](implicit ev:T <:< Parser[S,U]):Parser[S,U]	=
+	def flatten[U](using ev:T <:< Parser[S,U]):Parser[S,U]	=
 		self flatMap ev
 
-	def ap[U,V](that:Parser[S,U])(implicit ev:T <:< (U=>V)):Parser[S,V]	=
+	def ap[U,V](that:Parser[S,U])(using ev:T <:< (U=>V)):Parser[S,V]	=
 		for { a	<- self; b	<- that } yield a(b)
 
 	@deprecated("use product", "0.201.0")
@@ -337,12 +337,12 @@ abstract class Parser[S,+T] { self =>
 
 	//------------------------------------------------------------------------------
 
-	def seqTo[CC[_],U](factory:IterableFactory[CC])(implicit ev:T <:< IterableOnce[U]):Parser[S,CC[U]]	=
+	def seqTo[CC[_],U](factory:IterableFactory[CC])(using ev:T <:< IterableOnce[U]):Parser[S,CC[U]]	=
 		map { it =>
 			factory from it
 		}
 
-	def nesTo[CC[_],U](factory:IterableFactory[CC])(implicit ev:T <:< Nes[U]):Parser[S,CC[U]]	=
+	def nesTo[CC[_],U](factory:IterableFactory[CC])(using ev:T <:< Nes[U]):Parser[S,CC[U]]	=
 		map { it =>
 			factory from ev(it).toSeq
 		}

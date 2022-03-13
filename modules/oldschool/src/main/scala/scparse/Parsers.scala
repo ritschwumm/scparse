@@ -5,7 +5,7 @@ import scala.collection.mutable
 
 import scutil.lang.*
 
-class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
+class Parsers[M[+_]](using val base:Base[M]) { outer =>
 	import base.*
 
 	type Result[+C,+T]		= M[Item[C,T]]
@@ -305,7 +305,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 	}
 
 	/** parse into a source, then parse inside that source */
-	def inside[C,D,DS,T](a: =>Parser[C,DS], b: =>Parser[D,T])(implicit ev:DS <:< Source[D]):Parser[C,T] =
+	def inside[C,D,DS,T](a: =>Parser[C,DS], b: =>Parser[D,T])(using ev:DS <:< Source[D]):Parser[C,T] =
 		nest(ev, a, b)
 
 	/** parse into a source, then parse inside that source */
@@ -432,7 +432,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		def collect [U](func:PartialFunction[T,U]):Parser[C,U]	= outer .collect		(this, func)
 		def collapseMap[U](func:T=>Option[U]):Parser[C,U]		= outer .collapseMap	(this, func)
 		def ap[U,V](that: =>Parser[C,U])
-				(implicit witness:T <:< (U=>V)):Parser[C,V]		= outer .applicate	(outer.map(this, witness), that)
+				(using witness:T <:< (U=>V)):Parser[C,V]		= outer .applicate	(outer.map(this, witness), that)
 
 		def next [U](that: =>Parser[C,U]):Parser[C,(T,U)]		= outer .next		(this, that)
 		def left[U](that: =>Parser[C,U]):Parser[C,T] 			= outer .left		(this, that)
@@ -441,7 +441,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		def cons[TT>:T](that: =>Parser[C,List[TT]]):Parser[C,List[TT]]	=
 			outer .cons		(this, that)
 
-		def conses[U>:T](that: =>Parser[C,List[U]])(implicit witness:T<:<List[U]):Parser[C,List[U]]	=
+		def conses[U>:T](that: =>Parser[C,List[U]])(using witness:T<:<List[U]):Parser[C,List[U]]	=
 			outer .conses	(outer.map(this, witness), that)
 
 		def not :Parser[C,Unit]			= outer not		(this)
@@ -462,7 +462,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		def nest[D,U](mkSource:T=>Source[D], inner:Parser[D,U]):Parser[C,U]	=
 			outer.nest(mkSource, this, inner)
 
-		//def inside[C,D,DS,T](a: =>Parser[C,DS], b: =>Parser[D,T])(implicit ev:DS <:< Source[D]):Parser[C,T] = {
+		//def inside[C,D,DS,T](a: =>Parser[C,DS], b: =>Parser[D,T])(using ev:DS <:< Source[D]):Parser[C,T] = {
 
 		/*
 		//## dsl
@@ -476,7 +476,7 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		def ^^?[U](func:T=>Option[U]):Parser[C,U]					= outer filterMap	(this, func)
 		def ==>[U](func:T=>Parser[C,U]):Parser[C,U]					= outer flatMap		(this, func)
 		def <*>[U,V](that: =>Parser[C,U])
-				(implicit witness:T <:< (U=>V)):Parser[C,V]			= outer applicate	(outer map (this, witness), that)
+				(using witness:T <:< (U=>V)):Parser[C,V]			= outer applicate	(outer map (this, witness), that)
 		def <**>[U](that: =>Parser[C,T=>U]):Parser[C,U]				= outer applicate	(that, this)
 
 		def ~ [U](that: =>Parser[C,U]):Parser[C,(T,U)]				= outer next	(this, that)
@@ -484,9 +484,9 @@ class Parsers[M[+_]](implicit val base:Base[M]) { outer =>
 		def ~>[U](that: =>Parser[C,U]):Parser[C,U]					= outer right		(this, that)
 		// TODO should not be eager, see https://issues.scala-lang.org/browse/SI-1980
 		def ::[U](that: Parser[C,U])
-				(implicit witness:T<:<List[U]):Parser[C,List[U]]	= outer cons		(that, outer map (this, witness))
+				(using witness:T<:<List[U]):Parser[C,List[U]]	= outer cons		(that, outer map (this, witness))
 		def :::[U](that: Parser[C,List[U]])
-				(implicit witness:T<:<List[U]):Parser[C,List[U]]	= outer conses		(that, outer map (this, witness))
+				(using witness:T<:<List[U]):Parser[C,List[U]]	= outer conses		(that, outer map (this, witness))
 
 		def unary_! :Parser[C,Unit]									= outer not		(this)
 
