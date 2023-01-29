@@ -11,11 +11,11 @@ import scutil.core.implicits.*
 import scparse.ng.*
 
 object MappedFileInput {
-	def ofPath(path:Path):ParserInput[Byte]	=
-		of(path.toFile)
+	def of(path:Path):ParserInput[Byte]	=
+		ofFile(path.toFile)
 
 	// TODO path get rid of this
-	def of(file:File):ParserInput[Byte]	= {
+	def ofFile(file:File):ParserInput[Byte]	= {
 		val	mapped	= new RandomAccessFile(file, "r").getChannel use { fc =>
 			fc.map(FileChannel.MapMode.READ_ONLY, 0, file.length)
 		}
