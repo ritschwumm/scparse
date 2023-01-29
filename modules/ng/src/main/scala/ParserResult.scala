@@ -6,12 +6,12 @@ import scutil.lang.*
 object ParserResult {
 	def AnonFailure[S](index:Int):ParserResult[S,Nothing]				= Failure(index, List.empty)
 	def LeafFailure[S](index:Int, error:String):ParserResult[S,Nothing]	= Failure(index, List(error))
-
-	final case class Success[S,T](tail:ParserInput[S], t:T)			extends ParserResult[S,T]
-	final case class Failure[S](index:Int, errors:List[String])		extends ParserResult[S,Nothing]
 }
 
-sealed trait ParserResult[S,+T] {
+enum ParserResult[S,+T] {
+	case Success[S,T](tail:ParserInput[S], t:T)			extends ParserResult[S,T]
+	case Failure[S](index:Int, errors:List[String])		extends ParserResult[S,Nothing]
+
 	def toOption:Option[T]								= toEither.toOption
 	def toValidated:Validated[(Int,List[String]), T]	= toEither.toValidated
 
