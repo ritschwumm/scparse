@@ -1,8 +1,7 @@
 package scparse.ng.binary
 
-import java.io.File
 import java.io.RandomAccessFile
-import java.nio.file.Path
+import java.nio.file.*
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 
@@ -11,13 +10,9 @@ import scutil.core.implicits.*
 import scparse.ng.*
 
 object MappedFileInput {
-	def of(path:Path):ParserInput[Byte]	=
-		ofFile(path.toFile)
-
-	// TODO path get rid of this
-	def ofFile(file:File):ParserInput[Byte]	= {
-		val	mapped	= new RandomAccessFile(file, "r").getChannel use { fc =>
-			fc.map(FileChannel.MapMode.READ_ONLY, 0, file.length)
+	def of(file:Path):ParserInput[Byte]	={
+		val	mapped	= new RandomAccessFile(file.toFile, "r").getChannel use { fc =>
+			fc.map(FileChannel.MapMode.READ_ONLY, 0, Files.size(file))
 		}
 		MappedFileInput(mapped, 0)
 	}
