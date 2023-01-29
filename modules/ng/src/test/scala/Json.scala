@@ -1,5 +1,6 @@
 package scparse.ng.demo
 
+/*
 object Json {
 	case object Null									extends Json
 	final case class Boolean(value:scala.Boolean)		extends Json
@@ -10,3 +11,13 @@ object Json {
 }
 
 sealed abstract class Json
+*/
+
+enum Json {
+	case Null
+	case Boolean(value:scala.Boolean)
+	case Number(value:BigDecimal)
+	case String(value:java.lang.String)
+	case Array(value:Seq[Json])
+	case Object(value:Seq[(java.lang.String,Json)])
+}
