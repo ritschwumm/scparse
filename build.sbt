@@ -4,7 +4,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 inThisBuild(Seq(
 	organization	:= "de.djini",
-	version			:= "0.231.0",
+	version			:= "0.232.0",
 
 	scalaVersion	:= "3.1.3",
 	scalacOptions	++= Seq(
@@ -71,7 +71,6 @@ def myCrossProject(id:String, base:File, crossType:CrossType):CrossProject	=
 lazy val `scparse` =
 	(project in file("."))
 	.aggregate(
-		`scparse-oldschool`,
 		`scparse-ng-jvm`,
 		`scparse-ng-js`,
 	)
@@ -81,18 +80,6 @@ lazy val `scparse` =
 
 //------------------------------------------------------------------------------
 
-lazy val `scparse-oldschool`	=
-	(project in file("modules/oldschool"))
-	.enablePlugins()
-	.dependsOn()
-	.settings(
-		libraryDependencies	++= Seq(
-			"de.djini"		%%	"scutil-jdk"	% "0.224.0"	% "compile",
-			"io.monix"		%%	"minitest"		% "2.9.6"	% "test"
-		),
-		testFrameworks	+= new TestFramework("minitest.runner.Framework")
-	)
-
 lazy val `scparse-ng`	=
 	myCrossProject("scparse-ng", file("modules/ng"), CrossType.Pure)
 	.enablePlugins()
@@ -100,7 +87,7 @@ lazy val `scparse-ng`	=
 	//.dependsOn()
 	.settings(
 		libraryDependencies	++= Seq(
-			"de.djini"		%%% "scutil-core"	% "0.224.0"	% "compile",
+			"de.djini"		%%% "scutil-core"	% "0.225.0"	% "compile",
 			"io.monix"		%%	"minitest"		% "2.9.6"	% "test"
 		),
 		testFrameworks	+= new TestFramework("minitest.runner.Framework")
