@@ -20,10 +20,10 @@ implicit class BinaryParserParseOps[T](peer:BinaryParser[T]) {
 
 implicit class BinaryParserStringifySeqOps[T](peer:Parser[T,Seq[Byte]]) {
 	def stringify:Parser[T,ByteString]	=
-		peer map ByteString.fromSeq
+		peer map ByteString.fromIterable
 }
 
 implicit class BinaryParserStringifyNesOps[T](peer:Parser[T,Nes[Byte]]) {
 	def stringify:Parser[T,ByteString]	=
-		peer map { it => ByteString fromSeq it.toSeq }
+		peer map { it => ByteString fromIterable it.toSeq }
 }
