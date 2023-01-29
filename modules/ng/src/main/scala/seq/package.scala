@@ -2,7 +2,7 @@ package scparse.ng.seq
 
 import scparse.ng.*
 
-implicit class SeqParserParseOps[S,T](peer:Parser[S,T]) {
+implicit final class SeqParserParseOps[S,T](peer:Parser[S,T]) {
 	def parseIndexedSeq(s:IndexedSeq[S]):ParserResult[S,T]	=
 		peer parse (IndexedSeqInput of s)
 
