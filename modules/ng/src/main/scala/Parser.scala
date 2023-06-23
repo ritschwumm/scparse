@@ -173,14 +173,13 @@ abstract class Parser[S,+T] { self =>
 	//------------------------------------------------------------------------------
 
 	def filter(pred:Predicate[T]):Parser[S,T]	=
-		self collapseMap (_ optionBy pred)
+		self mapFilter (_ optionBy pred)
 
 	/** ensures we parsed some specific input value */
 	def parsed[TT>:T](value:TT):Parser[S,Unit]	=
 		self.filter(_ == value).void
 
-	// aka mapFilter
-	def collapseMap[U](func:T=>Option[U]):Parser[S,U]	=
+	def mapFilter[U](func:T=>Option[U]):Parser[S,U]	=
 		input => {
 			self parse input match {
 				case Success(tail, value)	=>
@@ -192,12 +191,12 @@ abstract class Parser[S,+T] { self =>
 			}
 		}
 
-	def collapse[U](using ev:T <:< Option[U]):Parser[S,U]	= self collapseMap ev
+	def flattenOption[U](using ev:T <:< Option[U]):Parser[S,U]	= self mapFilter ev
 
-	def collapseNamed[U](name:String)(using ev:T <:< Option[U]):Parser[S,U]	=
-		self.collapse named name
+	def flattenOptionNamed[U](name:String)(using ev:T <:< Option[U]):Parser[S,U]	=
+		self.flattenOption named name
 
-	def collect[U](func:PartialFunction[T,U]):Parser[S,U]	= self collapseMap func.lift
+	def collect[U](func:PartialFunction[T,U]):Parser[S,U]	= self mapFilter func.lift
 
 	//------------------------------------------------------------------------------
 

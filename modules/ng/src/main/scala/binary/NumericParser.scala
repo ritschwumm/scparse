@@ -14,5 +14,5 @@ object NumericParser {
 	val int64_le:BinaryParser[Long]		= number("int64 le",	8, _.toLittleEndianLong)
 
 	def number[T](name:String, length:Int, extract:ByteString=>Option[T]):BinaryParser[T]	=
-		BinaryParser takeByteString length map extract collapseNamed name
+		BinaryParser takeByteString length map extract flattenOptionNamed name
 }
