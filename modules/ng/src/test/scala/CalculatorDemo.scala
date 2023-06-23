@@ -13,10 +13,10 @@ object CalculatorDemo {
 	lazy val complete	= tokens.full(expression)
 
 	lazy val expression:TextParser[BigInt]
-					= term		chainLeft (add orElse sub)
-	lazy val term	= factor	chainLeft (mul orElse div)
-	lazy val factor	= value		chainRight exp
-	lazy val value	= number orElse bracket
+						= term		chainLeft (add orElse sub)
+	lazy val term		= factor	chainLeft (mul orElse div)
+	lazy val factor		= value		chainRight exp
+	lazy val value		= number orElse bracket
 	lazy val bracket	= tokens.symbol("(") right Parser.defer(expression) left tokens.symbol(")")
 
 	lazy val add		= binary[BigInt]("+")(_+_)
@@ -26,7 +26,7 @@ object CalculatorDemo {
 	lazy val exp		= binary[BigInt]("^")(_ pow _.toInt)
 
 	lazy val number		= sign ap natural
-	lazy val natural		= tokens.token(NaturalParser.natural)
+	lazy val natural	= tokens.token(NaturalParser.natural)
 	lazy val sign		= signPlus orElse signMinus orElse signNone
 	lazy val signPlus	= unary[BigInt]("+")(identity)
 	lazy val signMinus	= unary[BigInt]("-")(-_)

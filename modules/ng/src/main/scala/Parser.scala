@@ -138,7 +138,7 @@ object Parser {
 	//------------------------------------------------------------------------------
 
 	// TODO add a MonoidK instance - or even better, got for a full MonadPlus
-	implicit def ParserApplicative[S]:Applicative[Parser[S,_]]	=
+	given [S]:Applicative[Parser[S,_]]	=
 		new Applicative[Parser[S,_]] {
 			override def pure[T](it:T):Parser[S,T]											= Parser success it
 			override def ap[T1,T2](func:Parser[S,T1=>T2])(its:Parser[S,T1]):Parser[S,T2]	= func ap its
