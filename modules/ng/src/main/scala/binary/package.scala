@@ -33,11 +33,3 @@ extension [T](peer:Parser[T,Nes[Byte]]) {
 	def stringify:Parser[T,ByteString]	=
 		peer map { it => ByteString fromIterable it.toSeq }
 }
-
-object Test {
-	val s:Parser[Int,Seq[Byte]]	= ???
-	val n:Parser[Int,Nes[Byte]] = ???
-
-	s.stringify
-	n.stringify
-}

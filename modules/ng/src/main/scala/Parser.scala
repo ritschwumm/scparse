@@ -26,7 +26,10 @@ object Parser {
 	def unit[S]:Parser[S,Unit]	= pure(())
 
 	def failure[S]:Parser[S,Nothing]	=
-		input => ParserResult.Failure(input.index, List.empty)
+		input => AnonFailure(input.index)
+
+	def failureWith[S](error:String):Parser[S,Nothing]	=
+		input => LeafFailure(input.index, error)
 
 	def index[S]:Parser[S,Int]	=
 		input => ParserResult.Success(input, input.index)
@@ -68,6 +71,22 @@ object Parser {
 					}
 				}
 			loop(input, Vector.empty)
+		}
+
+	def skip[S](count:Int):Parser[S,Unit]	=
+		input => {
+			@tailrec
+			def loop(input2:ParserInput[S], accu:Int):ParserResult[S,Unit]	=
+				if (accu == count) {
+					Success(input2, ())
+				}
+				else {
+					input2.next match {
+						case Some((tail, _))	=> loop(tail, accu + 1)
+						case _					=> LeafFailure(input2.index, "end of input")
+					}
+				}
+			loop(input, 0)
 		}
 
 	// TODO can be optimized quite a bit
@@ -115,6 +134,9 @@ object Parser {
 	// TODO if we had Foldable, this would work, too
 	def choice[S,T](parsers:Iterable[Parser[S,T]]):Parser[S,T]	=
 		(parsers foldLeft (Parser.failure[S]:Parser[S,T]))(_ orElse _)
+
+	def choiceOf[S,T](parsers:Parser[S,T]*):Parser[S,T]	=
+		choice(parsers)
 
 	//------------------------------------------------------------------------------
 
@@ -302,13 +324,13 @@ abstract class Parser[S,+T] { self =>
 		input => {
 			@tailrec
 			def loop(input1:ParserInput[S], accu:IndexedSeq[T]):ParserResult[S,IndexedSeq[T]]	=
-					if (accu.size == count)	Success(input1, accu)
-					else {
-						self parse input1 match {
-							case Success(input2, value)	=> loop(input2, accu :+ value)
-							case Failure(_, _)			=> Success(input1, accu)
-						}
+				if (accu.size == count)	Success(input1, accu)
+				else {
+					self parse input1 match {
+						case Success(input2, value)	=> loop(input2, accu :+ value)
+						case Failure(_, _)			=> Success(input1, accu)
 					}
+				}
 			loop(input, Vector.empty[T])
 		}
 
@@ -422,11 +444,25 @@ abstract class Parser[S,+T] { self =>
 			}
 		}
 
+	def padTo(length:Int):Parser[S,T]	=
+		for {
+			before		<-	Parser.index
+			value		<-	this
+			after		<-	Parser.index
+			_			<-	{
+								val taken		= after - before
+								if (taken <= length)	Parser.skip(length - taken)
+								else					Parser.failureWith(s"expected to take at most ${length} items, but took ${taken} items")
+							}
+		}
+		yield value
+
 	def nest[U,V](mkInput:T=>ParserInput[U], inner:Parser[U,V]):Parser[S,V]	=
 		selfInput => {
 			self parse selfInput match {
 				case Success(selfRemainder, selfValue)	=>
-					inner parse mkInput(selfValue) match {
+					val innerInput	= mkInput(selfValue)
+					inner parse innerInput match {
 						case Success(innerRemainder, innerValue)	=> Success(selfRemainder, innerValue)
 						// TODO deal with the inner index somehow
 						case Failure(innerIndex, errors)			=> Failure(selfInput.index, "nest" +: errors)
@@ -435,11 +471,11 @@ abstract class Parser[S,+T] { self =>
 			}
 		}
 
-	def scanner:Parser[S,Seq[T]]	=
+	def scanner:Parser[S,IndexedSeq[T]]	=
 		(input:ParserInput[S]) => {
 			val out	= mutable.ArrayBuffer.empty[T]
 			@tailrec
-			def loop(ss:ParserInput[S]):ParserResult[S,Seq[T]]	= {
+			def loop(ss:ParserInput[S]):ParserResult[S,IndexedSeq[T]]	= {
 				self parse ss match {
 					case Success(rest, value)	=>
 						out	+= value
