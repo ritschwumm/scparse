@@ -18,19 +18,19 @@ extension (peer:TextParser[String]) {
 
 extension [T](peer:Parser[Char,T]) {
 	def parseString(s:String):ParserResult[Char,T]	=
-		peer parse (StringInput of s)
+		peer.parse (StringInput.of(s))
 }
 
 extension [T](peer:Parser[T,Seq[Char]]) {
 	@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 	@targetName("stringifySeq")
 	def stringify:Parser[T,String]	=
-		peer map { _.mkString }
+		peer.map(_.mkString)
 }
 
 extension [T](peer:Parser[T,Nes[Char]]) {
 	@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 	@targetName("stringifyNes")
 	def stringify:Parser[T,String]	=
-		peer map { _.toSeq.mkString }
+		peer.map(_.toSeq.mkString)
 }

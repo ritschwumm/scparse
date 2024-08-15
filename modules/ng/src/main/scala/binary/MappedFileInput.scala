@@ -20,6 +20,6 @@ object MappedFileInput {
 
 final case class MappedFileInput(input:MappedByteBuffer, val index:Int) extends ParserInput[Byte] {
 	def next:Option[(ParserInput[Byte], Byte)]	=
-		if (index < input.remaining)	Some((MappedFileInput(input, index+1), input get index))
+		if (index < input.remaining)	Some((MappedFileInput(input, index+1), input.get(index)))
 		else							None
 }

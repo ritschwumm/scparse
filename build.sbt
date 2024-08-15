@@ -4,14 +4,14 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 inThisBuild(Seq(
 	organization	:= "de.djini",
-	version			:= "0.248.0",
+	version			:= "0.249.0",
 
-	scalaVersion	:= "3.3.0",
+	scalaVersion	:= "3.3.1",
 	scalacOptions	++= Seq(
 		"-feature",
 		"-deprecation",
 		"-unchecked",
-		"-source:3.3",
+		"-source:future",
 		"-Wunused:all",
 		"-Xfatal-warnings",
 		"-Ykind-projector:underscores",
@@ -69,7 +69,7 @@ def myCrossProject(id:String, base:File, crossType:CrossType):CrossProject	=
 	.configurePlatform(JSPlatform)	(_ withId (id + "-js"))
 
 lazy val `scparse` =
-	(project in file("."))
+	project.in(file("."))
 	.aggregate(
 		`scparse-ng-jvm`,
 		`scparse-ng-js`,
@@ -87,7 +87,7 @@ lazy val `scparse-ng`	=
 	//.dependsOn()
 	.settings(
 		libraryDependencies	++= Seq(
-			"de.djini"		%%% "scutil-core"	% "0.239.0"	% "compile",
+			"de.djini"		%%% "scutil-core"	% "0.240.0"	% "compile",
 			"io.monix"		%%	"minitest"		% "2.9.6"	% "test"
 		),
 		testFrameworks	+= new TestFramework("minitest.runner.Framework")
@@ -98,4 +98,3 @@ lazy val `scparse-ng`	=
 	)
 lazy val `scparse-ng-jvm`	= `scparse-ng`.jvm
 lazy val `scparse-ng-js`	= `scparse-ng`.js
-

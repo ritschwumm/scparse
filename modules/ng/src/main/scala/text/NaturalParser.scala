@@ -3,14 +3,14 @@ package scparse.ng.text
 object NaturalParser {
 	// TODO have names
 
-	def natural:TextParser[BigInt]		= naturalNZ orElse naturalZ
+	def natural:TextParser[BigInt]		= naturalNZ `orElse` naturalZ
 
-	def naturalNZ:TextParser[BigInt]	= digitNZ cons digit.list map { buildNumber(10, decodeNumber, _) }
-	def naturalZ:TextParser[BigInt]		= digitZ tag 0L
+	def naturalNZ:TextParser[BigInt]	= digitNZ.cons(digit.list).map(buildNumber(10, decodeNumber, _))
+	def naturalZ:TextParser[BigInt]		= digitZ.tag(0L)
 
 	val digit:TextParser[Char]			= CharParser.digit
-	def digitNZ:TextParser[Char]		= digit filter { _ != '0' } named "non-zero digit"
-	def digitZ:TextParser[Char]			= TextParser is '0'			named "zero digit"
+	def digitNZ:TextParser[Char]		= digit.filter(_ != '0')	.named("non-zero digit")
+	def digitZ:TextParser[Char]			= TextParser.is('0')		.named("zero digit")
 
 	def buildNumber(placeValue:BigInt, digitValue:Char=>BigInt, digitChars:Seq[Char]):BigInt	=
 		digitChars.foldLeft(BigInt(0)){

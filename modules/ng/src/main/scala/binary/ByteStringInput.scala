@@ -10,7 +10,7 @@ object ByteStringInput {
 
 final case class ByteStringInput(s:ByteString, index:Int) extends ParserInput[Byte] {
 	def next:Option[(ParserInput[Byte],Byte)]	=
-		s get index map { byte =>
+		s.get(index).map { byte =>
 			ByteStringInput(s, index+1) -> byte
 		}
 }
