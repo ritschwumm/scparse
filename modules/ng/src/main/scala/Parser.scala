@@ -7,6 +7,7 @@ import scala.collection.mutable
 import scutil.core.implicits.*
 import scutil.lang.*
 import scutil.lang.tc.*
+import scutil.math.extension.OrderingSyntaxExtensions.*
 
 import scparse.ng.ParserResult.*
 
