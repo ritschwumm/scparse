@@ -296,10 +296,10 @@ abstract class Parser[S,+T] { self =>
 		input => {
 			@tailrec
 			def loop(input1:ParserInput[S], accu:Vector[T]):ParserResult[S,Vector[T]]	=
-					self.parse(input1) match {
-						case Success(input2, t)	=> loop(input2, accu :+ t)
-						case Failure(_, _)		=> Success(input1, accu)
-					}
+				self.parse(input1) match {
+					case Success(input2, t)	=> loop(input2, accu :+ t)
+					case Failure(_, _)		=> Success(input1, accu)
+				}
 			loop(input, Vector.empty[T])
 		}
 
