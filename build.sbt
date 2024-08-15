@@ -4,13 +4,14 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 inThisBuild(Seq(
 	organization	:= "de.djini",
-	version			:= "0.247.0",
+	version			:= "0.248.0",
 
 	scalaVersion	:= "3.3.0",
 	scalacOptions	++= Seq(
 		"-feature",
 		"-deprecation",
 		"-unchecked",
+		"-source:3.3",
 		"-Wunused:all",
 		"-Xfatal-warnings",
 		"-Ykind-projector:underscores",
@@ -86,7 +87,7 @@ lazy val `scparse-ng`	=
 	//.dependsOn()
 	.settings(
 		libraryDependencies	++= Seq(
-			"de.djini"		%%% "scutil-core"	% "0.238.0"	% "compile",
+			"de.djini"		%%% "scutil-core"	% "0.239.0"	% "compile",
 			"io.monix"		%%	"minitest"		% "2.9.6"	% "test"
 		),
 		testFrameworks	+= new TestFramework("minitest.runner.Framework")
